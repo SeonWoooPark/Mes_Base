@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:claude.ai)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(mv:*)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "browserbase",
+    "postgresql",
+    "DeepGraph React MCP",
+    "memory",
+    "filesystem",
+    "DeepGraph TypeScript MCP"
+  ]
+}
