@@ -8,7 +8,11 @@
       "Bash(npx tsc:*)",
       "Bash(rm:*)",
       "Bash(npm install:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(find:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "defaultMode": "acceptEdits"
   },
