@@ -162,6 +162,29 @@ const defaultMenuItems: NavigationItem[] = [
     ]
   },
   {
+    id: 'orders',
+    label: '수주 관리',
+    icon: '📋',
+    path: '/orders',
+    permission: 'orders.view',
+    children: [
+      {
+        id: 'order-list',
+        label: '수주 목록',
+        icon: '📝',
+        path: '/orders',
+        permission: 'orders.view'
+      },
+      {
+        id: 'order-status',
+        label: '수주 현황',
+        icon: '📊',
+        path: '/orders/status',
+        permission: 'orders.status.view'
+      }
+    ]
+  },
+  {
     id: 'bom',
     label: 'BOM 관리',
     icon: '🏗️',

@@ -1,0 +1,438 @@
+/**
+ * 수주관리 테이블 설정
+ * 
+ * TableTemplate에서 사용할 모든 설정을 정의합니다.
+ */
+
+import React from 'react';
+import { TableConfig } from '../templates/TableTemplate/types';
+import { Order, OrderStatus, OrderPriority } from './types';
+import { orderApi, updateOrderStatus, getCustomers, getProducts } from './api';
+
+// === 상태 텍스트 매핑 ===
+const getStatusText = (status: OrderStatus): string => {
+  const statusMap: Record<OrderStatus, string> = {
+    [OrderStatus.PENDING]: '대기',
+    [OrderStatus.CONFIRMED]: '확정',
+    [OrderStatus.IN_PRODUCTION]: '생산중',
+    [OrderStatus.READY_TO_SHIP]: '출하준비',
+    [OrderStatus.SHIPPED]: '출하완료',
+    [OrderStatus.DELIVERED]: '납품완료',
+    [OrderStatus.CANCELLED]: '취소'
+  };
+  return statusMap[status] || status;
+};
+
+// === 상태 색상 매핑 ===
+const getStatusColor = (status: OrderStatus): { bg: string; text: string } => {
+  const colorMap: Record<OrderStatus, { bg: string; text: string }> = {
+    [OrderStatus.PENDING]: { bg: '#fff3cd', text: '#856404' },
+    [OrderStatus.CONFIRMED]: { bg: '#d1ecf1', text: '#0c5460' },
+    [OrderStatus.IN_PRODUCTION]: { bg: '#cce7ff', text: '#004085' },
+    [OrderStatus.READY_TO_SHIP]: { bg: '#e7f3ff', text: '#004085' },
+    [OrderStatus.SHIPPED]: { bg: '#d4edda', text: '#155724' },
+    [OrderStatus.DELIVERED]: { bg: '#d4edda', text: '#155724' },
+    [OrderStatus.CANCELLED]: { bg: '#f8d7da', text: '#721c24' }
+  };
+  return colorMap[status] || { bg: '#f8f9fa', text: '#495057' };
+};
+
+// === 우선순위 텍스트 매핑 ===
+const getPriorityText = (priority: OrderPriority): string => {
+  const priorityMap: Record<OrderPriority, string> = {
+    [OrderPriority.LOW]: '낮음',
+    [OrderPriority.NORMAL]: '보통',
+    [OrderPriority.HIGH]: '높음',
+    [OrderPriority.URGENT]: '긴급'
+  };
+  return priorityMap[priority] || priority;
+};
+
+// === 우선순위 색상 매핑 ===
+const getPriorityColor = (priority: OrderPriority): { bg: string; text: string } => {
+  const colorMap: Record<OrderPriority, { bg: string; text: string }> = {
+    [OrderPriority.LOW]: { bg: '#f8f9fa', text: '#6c757d' },
+    [OrderPriority.NORMAL]: { bg: '#e2f3ff', text: '#0066cc' },
+    [OrderPriority.HIGH]: { bg: '#fff3cd', text: '#856404' },
+    [OrderPriority.URGENT]: { bg: '#f8d7da', text: '#721c24' }
+  };
+  return colorMap[priority] || { bg: '#f8f9fa', text: '#495057' };
+};
+
+// === 수주관리 테이블 설정 ===
+export const orderTableConfig: TableConfig<Order> = {
+  // API 설정
+  api: orderApi,
+  
+  // 테이블 컬럼 정의
+  columns: [
+    {
+      key: 'orderNumber',
+      label: '수주번호',
+      sortable: true,
+      width: '140px',
+      render: (value, record) => (
+        <div>
+          <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{value}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            {record.orderDate.toLocaleDateString()}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'customerName',
+      label: '고객명',
+      sortable: true,
+      width: '120px',
+      render: (value, record) => (
+        <div>
+          <div style={{ fontWeight: 'bold' }}>{value}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            {record.customerContact}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'productName',
+      label: '제품정보',
+      sortable: true,
+      render: (value, record) => (
+        <div>
+          <div style={{ fontWeight: 'bold' }}>{value}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            {record.productCode}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'quantity',
+      label: '수량',
+      align: 'right',
+      sortable: true,
+      width: '100px',
+      render: (value) => value.toLocaleString()
+    },
+    {
+      key: 'unitPrice',
+      label: '단가',
+      align: 'right',
+      sortable: true,
+      width: '100px',
+      render: (value) => `₩${value.toLocaleString()}`
+    },
+    {
+      key: 'totalAmount',
+      label: '총액',
+      align: 'right',
+      sortable: true,
+      width: '120px',
+      render: (value) => (
+        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+          ₩{value.toLocaleString()}
+        </span>
+      )
+    },
+    {
+      key: 'status',
+      label: '상태',
+      sortable: true,
+      width: '100px',
+      render: (value) => {
+        const colors = getStatusColor(value);
+        return (
+          <span style={{
+            padding: '4px 8px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            backgroundColor: colors.bg,
+            color: colors.text,
+            display: 'inline-block',
+            minWidth: '60px',
+            textAlign: 'center'
+          }}>
+            {getStatusText(value)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'priority',
+      label: '우선순위',
+      sortable: true,
+      width: '80px',
+      render: (value) => {
+        const colors = getPriorityColor(value);
+        return (
+          <span style={{
+            padding: '2px 6px',
+            borderRadius: '8px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            backgroundColor: colors.bg,
+            color: colors.text
+          }}>
+            {getPriorityText(value)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'requestedDeliveryDate',
+      label: '납기요청일',
+      sortable: true,
+      width: '110px',
+      render: (value, record) => {
+        const today = new Date();
+        const deliveryDate = new Date(value);
+        const isOverdue = deliveryDate < today && record.status !== OrderStatus.DELIVERED;
+        
+        return (
+          <div style={{ color: isOverdue ? '#dc3545' : '#333' }}>
+            <div>{deliveryDate.toLocaleDateString()}</div>
+            {isOverdue && record.status !== OrderStatus.CANCELLED && (
+              <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
+                지연!
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+  ],
+  
+  // 검색 필드 정의
+  searchFields: [
+    {
+      key: 'customerName',
+      label: '고객명',
+      type: 'text',
+      placeholder: '고객명으로 검색'
+    },
+    {
+      key: 'status',
+      label: '상태',
+      type: 'select',
+      options: [
+        { label: '대기', value: OrderStatus.PENDING },
+        { label: '확정', value: OrderStatus.CONFIRMED },
+        { label: '생산중', value: OrderStatus.IN_PRODUCTION },
+        { label: '출하준비', value: OrderStatus.READY_TO_SHIP },
+        { label: '출하완료', value: OrderStatus.SHIPPED },
+        { label: '납품완료', value: OrderStatus.DELIVERED },
+        { label: '취소', value: OrderStatus.CANCELLED }
+      ]
+    },
+    {
+      key: 'priority',
+      label: '우선순위',
+      type: 'select',
+      options: [
+        { label: '낮음', value: OrderPriority.LOW },
+        { label: '보통', value: OrderPriority.NORMAL },
+        { label: '높음', value: OrderPriority.HIGH },
+        { label: '긴급', value: OrderPriority.URGENT }
+      ]
+    },
+    {
+      key: 'orderDate',
+      label: '주문일',
+      type: 'dateRange'
+    }
+  ],
+  
+  // 폼 필드 정의
+  formFields: [
+    {
+      name: 'customerName',
+      label: '고객명',
+      type: 'text',
+      required: true,
+      placeholder: '고객명을 입력하세요'
+    },
+    {
+      name: 'customerContact',
+      label: '고객 연락처',
+      type: 'text',
+      required: true,
+      placeholder: '연락처를 입력하세요'
+    },
+    {
+      name: 'productId',
+      label: '제품',
+      type: 'select',
+      required: true,
+      options: [
+        { label: '갤럭시 S24 케이스 (FG2412001)', value: 'prod-001' },
+        { label: '센서 모듈 A타입 (FG2412002)', value: 'prod-002' },
+        { label: '실리콘 원료 (RM2412001)', value: 'prod-003' },
+        { label: '무선 충전기 15W (FG2412003)', value: 'prod-004' },
+        { label: '알루미늄 프레임 (SF2412001)', value: 'prod-005' }
+      ]
+    },
+    {
+      name: 'quantity',
+      label: '수량',
+      type: 'number',
+      required: true,
+      placeholder: '수량을 입력하세요',
+      validation: {
+        min: 1,
+        max: 100000
+      }
+    },
+    {
+      name: 'unitPrice',
+      label: '단가',
+      type: 'number',
+      required: true,
+      placeholder: '단가를 입력하세요',
+      validation: {
+        min: 0
+      }
+    },
+    {
+      name: 'orderDate',
+      label: '주문일',
+      type: 'date',
+      required: true
+    },
+    {
+      name: 'requestedDeliveryDate',
+      label: '납기 요청일',
+      type: 'date',
+      required: true
+    },
+    {
+      name: 'priority',
+      label: '우선순위',
+      type: 'select',
+      required: true,
+      options: [
+        { label: '낮음', value: OrderPriority.LOW },
+        { label: '보통', value: OrderPriority.NORMAL },
+        { label: '높음', value: OrderPriority.HIGH },
+        { label: '긴급', value: OrderPriority.URGENT }
+      ]
+    },
+    {
+      name: 'memo',
+      label: '비고',
+      type: 'textarea',
+      placeholder: '특이사항이나 요청사항을 입력하세요'
+    }
+  ],
+  
+  // 액션 설정
+  actions: {
+    create: { 
+      label: '수주 등록',
+      permission: 'orders.create' 
+    },
+    edit: { 
+      label: '수정',
+      permission: 'orders.edit' 
+    },
+    delete: { 
+      label: '삭제',
+      permission: 'orders.delete' 
+    },
+    view: { 
+      label: '상세보기' 
+    },
+    custom: [
+      {
+        key: 'confirm',
+        label: '확정',
+        icon: '✅',
+        variant: 'success',
+        handler: async (order) => {
+          if (order.status !== OrderStatus.PENDING) {
+            alert('대기 상태의 수주만 확정할 수 있습니다.');
+            return;
+          }
+          
+          if (window.confirm(`수주 '${order.orderNumber}'을(를) 확정하시겠습니까?`)) {
+            try {
+              await updateOrderStatus(order.id, OrderStatus.CONFIRMED);
+              window.location.reload(); // 간단한 새로고침
+            } catch (error) {
+              alert('확정 처리 중 오류가 발생했습니다.');
+            }
+          }
+        },
+        visible: (order) => order.status === OrderStatus.PENDING,
+        permission: 'orders.edit'
+      },
+      {
+        key: 'ship',
+        label: '출하',
+        icon: '🚚',
+        variant: 'primary',
+        handler: async (order) => {
+          if (order.status !== OrderStatus.READY_TO_SHIP) {
+            alert('출하준비 상태의 수주만 출하할 수 있습니다.');
+            return;
+          }
+          
+          if (window.confirm(`수주 '${order.orderNumber}'을(를) 출하하시겠습니까?`)) {
+            try {
+              await updateOrderStatus(order.id, OrderStatus.SHIPPED);
+              window.location.reload();
+            } catch (error) {
+              alert('출하 처리 중 오류가 발생했습니다.');
+            }
+          }
+        },
+        visible: (order) => order.status === OrderStatus.READY_TO_SHIP,
+        permission: 'orders.edit'
+      },
+      {
+        key: 'cancel',
+        label: '취소',
+        icon: '❌',
+        variant: 'danger',
+        handler: async (order) => {
+          if ([OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED].includes(order.status)) {
+            alert('출하 이후의 수주는 취소할 수 없습니다.');
+            return;
+          }
+          
+          if (window.confirm(`수주 '${order.orderNumber}'을(를) 취소하시겠습니까?`)) {
+            try {
+              await updateOrderStatus(order.id, OrderStatus.CANCELLED);
+              window.location.reload();
+            } catch (error) {
+              alert('취소 처리 중 오류가 발생했습니다.');
+            }
+          }
+        },
+        visible: (order) => ![OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED].includes(order.status),
+        permission: 'orders.delete'
+      }
+    ]
+  },
+  
+  // 기본 정렬
+  defaultSort: {
+    field: 'orderDate',
+    direction: 'desc'
+  },
+  
+  // 상세 페이지 경로
+  detailPath: '/orders',
+  
+  // 아이템 이름 추출 (삭제 확인용)
+  getItemName: (order) => `${order.orderNumber} (${order.customerName})`,
+  
+  // 권한 설정
+  permissions: {
+    view: 'orders.view',
+    create: 'orders.create',
+    edit: 'orders.edit',
+    delete: 'orders.delete'
+  }
+};

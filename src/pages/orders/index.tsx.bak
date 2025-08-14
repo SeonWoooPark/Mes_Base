@@ -1,0 +1,35 @@
+/**
+ * 수주관리 페이지
+ * 
+ * TableTemplate을 사용하여 구현된 수주관리 화면입니다.
+ * 기존 복잡한 클린 아키텍처 대신 단순화된 구조를 사용합니다.
+ * 
+ * 주요 기능:
+ * - 수주 목록 조회 (페이징, 검색, 필터링)
+ * - 수주 등록/수정/삭제
+ * - 수주 상태 관리 (확정, 출하, 취소)
+ * - 납기 관리 및 지연 알림
+ */
+
+import React from 'react';
+import { TableTemplate } from '../templates/TableTemplate';
+import { orderTableConfig } from './config';
+import { Order } from './types';
+
+export const OrderManagementPage: React.FC = () => {
+  const handleNavigate = (path: string) => {
+    // 라우터 구현 시 사용
+    console.log('Navigate to:', path);
+  };
+
+  return (
+    <TableTemplate<Order>
+      config={orderTableConfig}
+      title="수주 관리"
+      createPermission="orders.create"
+      onNavigate={handleNavigate}
+    />
+  );
+};
+
+export default OrderManagementPage;

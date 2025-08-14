@@ -32,6 +32,14 @@ import { DeleteBOMItemUseCase } from '../application/usecases/bom/DeleteBOMItemU
 import { CopyBOMUseCase } from '../application/usecases/bom/CopyBOMUseCase';
 import { CompareBOMUseCase } from '../application/usecases/bom/CompareBOMUseCase';
 
+// Order UseCase Imports
+import { GetOrderListUseCase } from '../application/usecases/order/GetOrderListUseCase';
+import { CreateOrderUseCase } from '../application/usecases/order/CreateOrderUseCase';
+import { UpdateOrderUseCase } from '../application/usecases/order/UpdateOrderUseCase';
+import { UpdateOrderStatusUseCase } from '../application/usecases/order/UpdateOrderStatusUseCase';
+import { DeleteOrderUseCase } from '../application/usecases/order/DeleteOrderUseCase';
+import { GetOrderHistoryUseCase } from '../application/usecases/order/GetOrderHistoryUseCase';
+
 import { ProductRepository } from '../domain/repositories/ProductRepository';
 import { ProductHistoryRepository } from '../domain/repositories/ProductHistoryRepository';
 import { ProductCodeGenerator, DefaultProductCodeGenerator } from '../domain/services/ProductCodeGenerator';
@@ -46,6 +54,12 @@ import { BOMCircularChecker, DefaultBOMCircularChecker } from '../domain/service
 import { BOMUsageChecker, DefaultBOMUsageChecker } from '../domain/services/BOMUsageChecker';
 import { ComponentType } from '../domain/entities/BOMItem';
 
+// Order Domain Imports
+import { OrderRepository } from '../domain/repositories/OrderRepository';
+import { OrderHistoryRepository } from '../domain/repositories/OrderHistoryRepository';
+import { OrderNoGenerator, DefaultOrderNoGenerator } from '../domain/services/OrderNoGenerator';
+import { OrderType, OrderStatus, OrderPriority } from '../domain/entities/Order';
+
 import { ApiClient } from '../infrastructure/api/ApiClient';
 import { HttpProductRepository } from '../infrastructure/repositories/HttpProductRepository';
 import { HttpProductHistoryRepository } from '../infrastructure/repositories/HttpProductHistoryRepository';
@@ -57,6 +71,11 @@ import { MockProductUsageChecker } from '../infrastructure/repositories/MockProd
 import { MockBOMRepository } from '../infrastructure/repositories/MockBOMRepository';
 import { MockBOMItemRepository } from '../infrastructure/repositories/MockBOMItemRepository';
 import { MockBOMHistoryRepository } from '../infrastructure/repositories/MockBOMHistoryRepository';
+
+// Order Mock Repository Imports
+import { MockOrderRepository } from '../infrastructure/repositories/MockOrderRepository';
+import { MockOrderHistoryRepository } from '../infrastructure/repositories/MockOrderHistoryRepository';
+import { MockSequenceRepository } from '../infrastructure/services/MockSequenceRepository';
 
 /**
  * 제품 타입 표시 담당 클래스
@@ -162,6 +181,17 @@ export class DIContainer {
       ? new MockBOMHistoryRepository()      // Mock: 메모리 내 BOM History 데이터 사용  
       : new MockBOMHistoryRepository();     // TODO: 실제 HttpBOMHistoryRepository 구현 시 교체
 
+    // Order Repository 구현체 선택
+    const orderRepository = useMockData
+      ? new MockOrderRepository()           // Mock: 메모리 내 Order 데이터 사용
+      : new MockOrderRepository();          // TODO: 실제 HttpOrderRepository 구현 시 교체
+    
+    const orderHistoryRepository = useMockData
+      ? new MockOrderHistoryRepository()   // Mock: 메모리 내 OrderHistory 데이터 사용
+      : new MockOrderHistoryRepository();  // TODO: 실제 HttpOrderHistoryRepository 구현 시 교체
+
+    const sequenceRepository = new MockSequenceRepository(); // 시퀀스 관리용
+
     // Repository 등록
     this.dependencies.set('ProductRepository', productRepository);
     this.dependencies.set('ProductHistoryRepository', productHistoryRepository);
@@ -169,6 +199,9 @@ export class DIContainer {
     this.dependencies.set('BOMRepository', bomRepository);
     this.dependencies.set('BOMItemRepository', bomItemRepository);
     this.dependencies.set('BOMHistoryRepository', bomHistoryRepository);
+    this.dependencies.set('OrderRepository', orderRepository);
+    this.dependencies.set('OrderHistoryRepository', orderHistoryRepository);
+    this.dependencies.set('SequenceRepository', sequenceRepository);
 
     // === Domain Service 설정 ===
     const productCodeGenerator = new DefaultProductCodeGenerator(productRepository);
@@ -179,11 +212,15 @@ export class DIContainer {
     const bomCircularChecker = new DefaultBOMCircularChecker(bomRepository, bomItemRepository);
     const bomUsageChecker = new DefaultBOMUsageChecker(bomRepository, bomItemRepository);
 
+    // Order Domain Services
+    const orderNoGenerator = new DefaultOrderNoGenerator(sequenceRepository);
+
     this.dependencies.set('ProductCodeGenerator', productCodeGenerator);
     this.dependencies.set('ProductPresenter', productPresenter);
     this.dependencies.set('BOMPresenter', bomPresenter);
     this.dependencies.set('BOMCircularChecker', bomCircularChecker);
     this.dependencies.set('BOMUsageChecker', bomUsageChecker);
+    this.dependencies.set('OrderNoGenerator', orderNoGenerator);
 
     // === Application Layer - UseCase 설정 ===
     // 각 UseCase에 필요한 의존성 주입
@@ -244,6 +281,29 @@ export class DIContainer {
       bomHistoryRepository
     );
 
+    // Order UseCases
+    const getOrderListUseCase = new GetOrderListUseCase(orderRepository);
+    const createOrderUseCase = new CreateOrderUseCase(
+      orderRepository,
+      orderHistoryRepository,
+      orderNoGenerator
+    );
+    const updateOrderUseCase = new UpdateOrderUseCase(
+      orderRepository,
+      orderHistoryRepository
+    );
+    const updateOrderStatusUseCase = new UpdateOrderStatusUseCase(
+      orderRepository,
+      orderHistoryRepository
+    );
+    const deleteOrderUseCase = new DeleteOrderUseCase(
+      orderRepository,
+      orderHistoryRepository
+    );
+    const getOrderHistoryUseCase = new GetOrderHistoryUseCase(
+      orderHistoryRepository
+    );
+
     // UseCase 등록
     this.dependencies.set('GetProductListUseCase', getProductListUseCase);
     this.dependencies.set('CreateProductUseCase', createProductUseCase);
@@ -256,6 +316,12 @@ export class DIContainer {
     this.dependencies.set('DeleteBOMItemUseCase', deleteBOMItemUseCase);
     this.dependencies.set('CopyBOMUseCase', copyBOMUseCase);
     this.dependencies.set('CompareBOMUseCase', compareBOMUseCase);
+    this.dependencies.set('GetOrderListUseCase', getOrderListUseCase);
+    this.dependencies.set('CreateOrderUseCase', createOrderUseCase);
+    this.dependencies.set('UpdateOrderUseCase', updateOrderUseCase);
+    this.dependencies.set('UpdateOrderStatusUseCase', updateOrderStatusUseCase);
+    this.dependencies.set('DeleteOrderUseCase', deleteOrderUseCase);
+    this.dependencies.set('GetOrderHistoryUseCase', getOrderHistoryUseCase);
   }
 
   /**
@@ -424,5 +490,72 @@ export class DIContainer {
    */
   getBOMPresenter(): BOMPresenter {
     return this.get<BOMPresenter>('BOMPresenter');
+  }
+
+  // === 타입 안전한 Order UseCase 조회 메서드들 ===
+
+  /**
+   * 수주 목록 조회 UseCase
+   */
+  getOrderListUseCase(): GetOrderListUseCase {
+    return this.get<GetOrderListUseCase>('GetOrderListUseCase');
+  }
+
+  /**
+   * 수주 생성 UseCase
+   */
+  getCreateOrderUseCase(): CreateOrderUseCase {
+    return this.get<CreateOrderUseCase>('CreateOrderUseCase');
+  }
+
+  /**
+   * 수주 수정 UseCase
+   */
+  getUpdateOrderUseCase(): UpdateOrderUseCase {
+    return this.get<UpdateOrderUseCase>('UpdateOrderUseCase');
+  }
+
+  /**
+   * 수주 상태 변경 UseCase
+   */
+  getUpdateOrderStatusUseCase(): UpdateOrderStatusUseCase {
+    return this.get<UpdateOrderStatusUseCase>('UpdateOrderStatusUseCase');
+  }
+
+  /**
+   * 수주 삭제 UseCase
+   */
+  getDeleteOrderUseCase(): DeleteOrderUseCase {
+    return this.get<DeleteOrderUseCase>('DeleteOrderUseCase');
+  }
+
+  /**
+   * 수주 이력 조회 UseCase
+   */
+  getOrderHistoryUseCase(): GetOrderHistoryUseCase {
+    return this.get<GetOrderHistoryUseCase>('GetOrderHistoryUseCase');
+  }
+
+  // === 타입 안전한 Order Repository 조회 메서드들 ===
+
+  /**
+   * 수주 저장소
+   */
+  getOrderRepository(): OrderRepository {
+    return this.get<OrderRepository>('OrderRepository');
+  }
+
+  /**
+   * 수주 이력 저장소
+   */
+  getOrderHistoryRepository(): OrderHistoryRepository {
+    return this.get<OrderHistoryRepository>('OrderHistoryRepository');
+  }
+
+  /**
+   * 수주번호 생성기
+   */
+  getOrderNoGenerator(): OrderNoGenerator {
+    return this.get<OrderNoGenerator>('OrderNoGenerator');
   }
 }

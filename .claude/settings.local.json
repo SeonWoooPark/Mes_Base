@@ -19,5 +19,6 @@
     "memory",
     "filesystem",
     "DeepGraph TypeScript MCP"
-  ]
+  ],
+  "enableAllProjectMcpServers": true
 }
