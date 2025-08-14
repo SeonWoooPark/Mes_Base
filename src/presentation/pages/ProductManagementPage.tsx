@@ -399,7 +399,7 @@ export const ProductManagementPage: React.FC = () => {
                       onClick={() => setIsBOMCompareModalOpen(true)}
                       disabled={bomLoading}
                     >
-                      📊 BOM 비교
+                      BOM 비교
                     </Button>
                     <Button 
                       onClick={() => loadBOMTree({ productId: selectedProductForBOM.id })}
