@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  useState,
+} from "react";
 
 /**
  * 성능 측정 인터페이스
@@ -16,18 +22,18 @@ interface PerformanceMetrics {
  * 메모이제이션 캐시 옵션
  */
 interface MemoizationOptions {
-  maxSize?: number;           // 최대 캐시 크기
-  ttl?: number;              // Time To Live (밀리초)
-  enableWeakRef?: boolean;    // WeakRef 사용 여부
+  maxSize?: number; // 최대 캐시 크기
+  ttl?: number; // Time To Live (밀리초)
+  enableWeakRef?: boolean; // WeakRef 사용 여부
 }
 
 /**
  * 디바운스 훅 옵션
  */
 interface DebounceOptions {
-  leading?: boolean;          // 시작 시점에 실행
-  trailing?: boolean;         // 끝 시점에 실행
-  maxWait?: number;          // 최대 대기 시간
+  leading?: boolean; // 시작 시점에 실행
+  trailing?: boolean; // 끝 시점에 실행
+  maxWait?: number; // 최대 대기 시간
 }
 
 /**
@@ -99,11 +105,11 @@ class PerformanceMonitor {
    * 옵저버들에게 알림
    */
   private notifyObservers(metric: PerformanceMetrics): void {
-    this.observers.forEach(callback => {
+    this.observers.forEach((callback) => {
       try {
         callback(metric);
       } catch (error) {
-        console.error('Performance observer error:', error);
+        console.error("Performance observer error:", error);
       }
     });
   }
@@ -131,14 +137,16 @@ class PerformanceMonitor {
     maxDuration: number;
     minDuration: number;
   } {
-    const metrics = this.getAllMetrics().filter(m => m.duration !== undefined);
-    
+    const metrics = this.getAllMetrics().filter(
+      (m) => m.duration !== undefined
+    );
+
     if (metrics.length === 0) {
       return { total: 0, avgDuration: 0, maxDuration: 0, minDuration: 0 };
     }
 
-    const durations = metrics.map(m => m.duration!);
-    
+    const durations = metrics.map((m) => m.duration!);
+
     return {
       total: metrics.length,
       avgDuration: durations.reduce((sum, d) => sum + d, 0) / durations.length,
@@ -163,19 +171,21 @@ export function measurePerformance(name: string) {
     const originalMethod = descriptor.value!;
 
     descriptor.value = function (this: any, ...args: any[]) {
-      const measureName = `${name || `${target.constructor.name}.${propertyKey}`}`;
+      const measureName = `${
+        name || `${target.constructor.name}.${propertyKey}`
+      }`;
       performanceMonitor.startMeasure(measureName);
-      
+
       try {
         const result = originalMethod.apply(this, args);
-        
+
         // Promise인 경우 비동기 처리
-        if (result && typeof result.then === 'function') {
+        if (result && typeof result.then === "function") {
           return result.finally(() => {
             performanceMonitor.endMeasure(measureName);
           });
         }
-        
+
         performanceMonitor.endMeasure(measureName);
         return result;
       } catch (error) {
@@ -203,17 +213,20 @@ export function usePerformance(name: string) {
     return performanceMonitor.endMeasure(name);
   }, [name]);
 
-  const measure = useCallback(async <T>(fn: () => T | Promise<T>): Promise<T> => {
-    start();
-    try {
-      const result = await fn();
-      end();
-      return result;
-    } catch (error) {
-      end();
-      throw error;
-    }
-  }, [start, end]);
+  const measure = useCallback(
+    async <T>(fn: () => T | Promise<T>): Promise<T> => {
+      start();
+      try {
+        const result = await fn();
+        end();
+        return result;
+      } catch (error) {
+        end();
+        throw error;
+      }
+    },
+    [start, end]
+  );
 
   return { start, end, measure };
 }
@@ -222,7 +235,10 @@ export function usePerformance(name: string) {
  * 고급 메모이제이션 클래스
  */
 class AdvancedMemoization<K, V> {
-  private cache = new Map<string, { value: V; timestamp: number; weakRef?: any }>();
+  private cache = new Map<
+    string,
+    { value: V; timestamp: number; weakRef?: any }
+  >();
   private options: Required<MemoizationOptions>;
 
   constructor(options: MemoizationOptions = {}) {
@@ -238,9 +254,9 @@ class AdvancedMemoization<K, V> {
    * 키를 문자열로 변환
    */
   private keyToString(key: K): string {
-    if (typeof key === 'string') return key;
-    if (typeof key === 'number') return key.toString();
-    if (typeof key === 'object' && key !== null) {
+    if (typeof key === "string") return key;
+    if (typeof key === "number") return key.toString();
+    if (typeof key === "object" && key !== null) {
       return JSON.stringify(key);
     }
     return String(key);
@@ -252,7 +268,7 @@ class AdvancedMemoization<K, V> {
   get(key: K): V | undefined {
     const keyStr = this.keyToString(key);
     const cached = this.cache.get(keyStr);
-    
+
     if (!cached) return undefined;
 
     // TTL 체크
@@ -282,7 +298,7 @@ class AdvancedMemoization<K, V> {
 
     // 캐시 크기 제한
     if (this.cache.size >= this.options.maxSize) {
-      const firstKey = this.cache.keys().next().value;
+      const firstKey: any = this.cache.keys().next().value;
       this.cache.delete(firstKey);
     }
 
@@ -292,7 +308,12 @@ class AdvancedMemoization<K, V> {
     };
 
     // WeakRef 사용
-    if (this.options.enableWeakRef && typeof value === 'object' && value !== null && typeof (globalThis as any).WeakRef !== 'undefined') {
+    if (
+      this.options.enableWeakRef &&
+      typeof value === "object" &&
+      value !== null &&
+      typeof (globalThis as any).WeakRef !== "undefined"
+    ) {
       cacheEntry.weakRef = new (globalThis as any).WeakRef(value);
     }
 
@@ -326,7 +347,7 @@ class AdvancedMemoization<K, V> {
       }
     });
 
-    toDelete.forEach(key => this.cache.delete(key));
+    toDelete.forEach((key) => this.cache.delete(key));
   }
 }
 
@@ -339,13 +360,13 @@ export function useAdvancedMemo<T>(
   options?: MemoizationOptions
 ): T {
   const memoRef = useRef<AdvancedMemoization<string, T>>();
-  
+
   if (!memoRef.current) {
     memoRef.current = new AdvancedMemoization<string, T>(options);
   }
 
   const depsKey = JSON.stringify(deps);
-  
+
   return useMemo(() => {
     const cached = memoRef.current!.get(depsKey);
     if (cached !== undefined) {
@@ -367,49 +388,61 @@ export function useAdvancedDebounce<T extends (...args: any[]) => any>(
   options: DebounceOptions = {}
 ): T {
   const { leading = false, trailing = true, maxWait } = options;
-  
+
   const lastCallTime = useRef<number>(0);
   const lastInvokeTime = useRef<number>(0);
   const timerId = useRef<NodeJS.Timeout>();
   const lastArgs = useRef<Parameters<T>>();
   const result = useRef<ReturnType<T>>(undefined as any);
 
-  const invokeFunc = useCallback((time: number): ReturnType<T> => {
-    const args = lastArgs.current!;
+  const invokeFunc = useCallback(
+    (time: number): ReturnType<T> => {
+      const args = lastArgs.current!;
 
-    lastArgs.current = undefined;
-    lastInvokeTime.current = time;
-    result.current = callback(...args);
-    return result.current;
-  }, [callback]);
+      lastArgs.current = undefined;
+      lastInvokeTime.current = time;
+      result.current = callback(...args);
+      return result.current;
+    },
+    [callback]
+  );
 
-  const leadingEdge = useCallback((time: number): ReturnType<T> => {
-    lastInvokeTime.current = time;
-    timerId.current = setTimeout(timerExpired, delay);
-    return leading ? invokeFunc(time) : result.current!;
-  }, [delay, leading, invokeFunc]);
+  const leadingEdge = useCallback(
+    (time: number): ReturnType<T> => {
+      lastInvokeTime.current = time;
+      timerId.current = setTimeout(timerExpired, delay);
+      return leading ? invokeFunc(time) : result.current!;
+    },
+    [delay, leading, invokeFunc]
+  );
 
-  const remainingWait = useCallback((time: number) => {
-    const timeSinceLastCall = time - lastCallTime.current;
-    const timeSinceLastInvoke = time - lastInvokeTime.current;
-    const timeWaiting = delay - timeSinceLastCall;
+  const remainingWait = useCallback(
+    (time: number) => {
+      const timeSinceLastCall = time - lastCallTime.current;
+      const timeSinceLastInvoke = time - lastInvokeTime.current;
+      const timeWaiting = delay - timeSinceLastCall;
 
-    return maxWait !== undefined
-      ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
-      : timeWaiting;
-  }, [delay, maxWait]);
+      return maxWait !== undefined
+        ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
+        : timeWaiting;
+    },
+    [delay, maxWait]
+  );
 
-  const shouldInvoke = useCallback((time: number) => {
-    const timeSinceLastCall = time - lastCallTime.current;
-    const timeSinceLastInvoke = time - lastInvokeTime.current;
+  const shouldInvoke = useCallback(
+    (time: number) => {
+      const timeSinceLastCall = time - lastCallTime.current;
+      const timeSinceLastInvoke = time - lastInvokeTime.current;
 
-    return (
-      lastCallTime.current === 0 ||
-      timeSinceLastCall >= delay ||
-      timeSinceLastCall < 0 ||
-      (maxWait !== undefined && timeSinceLastInvoke >= maxWait)
-    );
-  }, [delay, maxWait]);
+      return (
+        lastCallTime.current === 0 ||
+        timeSinceLastCall >= delay ||
+        timeSinceLastCall < 0 ||
+        (maxWait !== undefined && timeSinceLastInvoke >= maxWait)
+      );
+    },
+    [delay, maxWait]
+  );
 
   const timerExpired = useCallback(() => {
     const time = Date.now();
@@ -419,15 +452,18 @@ export function useAdvancedDebounce<T extends (...args: any[]) => any>(
     timerId.current = setTimeout(timerExpired, remainingWait(time));
   }, [shouldInvoke, remainingWait]);
 
-  const trailingEdge = useCallback((time: number): ReturnType<T> => {
-    timerId.current = undefined;
+  const trailingEdge = useCallback(
+    (time: number): ReturnType<T> => {
+      timerId.current = undefined;
 
-    if (trailing && lastArgs.current) {
-      return invokeFunc(time);
-    }
-    lastArgs.current = undefined;
-    return result.current!;
-  }, [trailing, invokeFunc]);
+      if (trailing && lastArgs.current) {
+        return invokeFunc(time);
+      }
+      lastArgs.current = undefined;
+      return result.current!;
+    },
+    [trailing, invokeFunc]
+  );
 
   const cancel = useCallback(() => {
     if (timerId.current !== undefined) {
@@ -440,34 +476,39 @@ export function useAdvancedDebounce<T extends (...args: any[]) => any>(
   }, []);
 
   const flush = useCallback((): ReturnType<T> => {
-    return timerId.current === undefined ? result.current! : trailingEdge(Date.now());
+    return timerId.current === undefined
+      ? result.current!
+      : trailingEdge(Date.now());
   }, [trailingEdge]);
 
   const pending = useCallback(() => {
     return timerId.current !== undefined;
   }, []);
 
-  const debounced = useCallback((...args: Parameters<T>): ReturnType<T> => {
-    const time = Date.now();
-    const isInvoking = shouldInvoke(time);
+  const debounced = useCallback(
+    (...args: Parameters<T>): ReturnType<T> => {
+      const time = Date.now();
+      const isInvoking = shouldInvoke(time);
 
-    lastArgs.current = args;
-    lastCallTime.current = time;
+      lastArgs.current = args;
+      lastCallTime.current = time;
 
-    if (isInvoking) {
+      if (isInvoking) {
+        if (timerId.current === undefined) {
+          return leadingEdge(lastCallTime.current);
+        }
+        if (maxWait !== undefined) {
+          timerId.current = setTimeout(timerExpired, delay);
+          return invokeFunc(lastCallTime.current);
+        }
+      }
       if (timerId.current === undefined) {
-        return leadingEdge(lastCallTime.current);
-      }
-      if (maxWait !== undefined) {
         timerId.current = setTimeout(timerExpired, delay);
-        return invokeFunc(lastCallTime.current);
       }
-    }
-    if (timerId.current === undefined) {
-      timerId.current = setTimeout(timerExpired, delay);
-    }
-    return result.current!;
-  }, [shouldInvoke, leadingEdge, maxWait, delay, timerExpired, invokeFunc]) as T;
+      return result.current!;
+    },
+    [shouldInvoke, leadingEdge, maxWait, delay, timerExpired, invokeFunc]
+  ) as T;
 
   // 메서드 추가
   (debounced as any).cancel = cancel;
@@ -490,15 +531,15 @@ export function useAdvancedDebounce<T extends (...args: any[]) => any>(
  */
 export function useRenderCount(componentName?: string): number {
   const renderCount = useRef(0);
-  
+
   renderCount.current += 1;
-  
+
   useEffect(() => {
-    if (componentName && process.env.NODE_ENV === 'development') {
+    if (componentName && process.env.NODE_ENV === "development") {
       console.log(`${componentName} rendered ${renderCount.current} times`);
     }
   });
-  
+
   return renderCount.current;
 }
 
@@ -507,26 +548,29 @@ export function useRenderCount(componentName?: string): number {
  */
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
-  
+
   useEffect(() => {
     ref.current = value;
   });
-  
+
   return ref.current;
 }
 
 /**
  * 컴포넌트 업데이트 이유 추적 훅
  */
-export function useWhyDidYouUpdate(name: string, props: Record<string, any>): void {
+export function useWhyDidYouUpdate(
+  name: string,
+  props: Record<string, any>
+): void {
   const previousProps = useRef<Record<string, any>>();
-  
+
   useEffect(() => {
-    if (previousProps.current && process.env.NODE_ENV === 'development') {
+    if (previousProps.current && process.env.NODE_ENV === "development") {
       const allKeys = Object.keys({ ...previousProps.current, ...props });
       const changedProps: Record<string, { from: any; to: any }> = {};
-      
-      allKeys.forEach(key => {
+
+      allKeys.forEach((key) => {
         if (previousProps.current![key] !== props[key]) {
           changedProps[key] = {
             from: previousProps.current![key],
@@ -534,12 +578,12 @@ export function useWhyDidYouUpdate(name: string, props: Record<string, any>): vo
           };
         }
       });
-      
+
       if (Object.keys(changedProps).length) {
-        console.log('[why-did-you-update]', name, changedProps);
+        console.log("[why-did-you-update]", name, changedProps);
       }
     }
-    
+
     previousProps.current = props;
   });
 }
@@ -555,20 +599,26 @@ export function useBatchedUpdates<T>(
   const pendingUpdates = useRef<Array<(prevState: T) => T>>([]);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  const batchedSetState = useCallback((updater: (prevState: T) => T) => {
-    pendingUpdates.current.push(updater);
+  const batchedSetState = useCallback(
+    (updater: (prevState: T) => T) => {
+      pendingUpdates.current.push(updater);
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
 
-    timeoutRef.current = setTimeout(() => {
-      setState(prevState => {
-        return pendingUpdates.current.reduce((acc, update) => update(acc), prevState);
-      });
-      pendingUpdates.current = [];
-    }, batchDelay);
-  }, [batchDelay]);
+      timeoutRef.current = setTimeout(() => {
+        setState((prevState) => {
+          return pendingUpdates.current.reduce(
+            (acc, update) => update(acc),
+            prevState
+          );
+        });
+        pendingUpdates.current = [];
+      }, batchDelay);
+    },
+    [batchDelay]
+  );
 
   useEffect(() => {
     return () => {
@@ -589,13 +639,16 @@ export const PerformanceUtils = {
    * 번들 크기 분석 정보 출력
    */
   logBundleInfo: () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.group('📦 Bundle Analysis');
-      console.log('React version:', React.version);
-      console.log('Environment:', process.env.NODE_ENV);
-      console.log('Performance API available:', !!window.performance);
-      console.log('Intersection Observer available:', !!window.IntersectionObserver);
-      console.log('ResizeObserver available:', !!window.ResizeObserver);
+    if (process.env.NODE_ENV === "development") {
+      console.group("📦 Bundle Analysis");
+      console.log("React version:", React.version);
+      console.log("Environment:", process.env.NODE_ENV);
+      console.log("Performance API available:", !!window.performance);
+      console.log(
+        "Intersection Observer available:",
+        !!window.IntersectionObserver
+      );
+      console.log("ResizeObserver available:", !!window.ResizeObserver);
       console.groupEnd();
     }
   },
@@ -606,11 +659,20 @@ export const PerformanceUtils = {
   logMemoryUsage: () => {
     // @ts-ignore
     const memory = (performance as any).memory;
-    if (memory && process.env.NODE_ENV === 'development') {
-      console.group('🧠 Memory Usage');
-      console.log('Used:', Math.round(memory.usedJSHeapSize / 1024 / 1024) + ' MB');
-      console.log('Total:', Math.round(memory.totalJSHeapSize / 1024 / 1024) + ' MB');
-      console.log('Limit:', Math.round(memory.jsHeapSizeLimit / 1024 / 1024) + ' MB');
+    if (memory && process.env.NODE_ENV === "development") {
+      console.group("🧠 Memory Usage");
+      console.log(
+        "Used:",
+        Math.round(memory.usedJSHeapSize / 1024 / 1024) + " MB"
+      );
+      console.log(
+        "Total:",
+        Math.round(memory.totalJSHeapSize / 1024 / 1024) + " MB"
+      );
+      console.log(
+        "Limit:",
+        Math.round(memory.jsHeapSizeLimit / 1024 / 1024) + " MB"
+      );
       console.groupEnd();
     }
   },
@@ -620,12 +682,21 @@ export const PerformanceUtils = {
    */
   logPerformanceStats: () => {
     const stats = performanceMonitor.getStats();
-    if (process.env.NODE_ENV === 'development') {
-      console.group('⚡ Performance Stats');
-      console.log('Total measurements:', stats.total);
-      console.log('Average duration:', Math.round(stats.avgDuration * 100) / 100 + ' ms');
-      console.log('Max duration:', Math.round(stats.maxDuration * 100) / 100 + ' ms');
-      console.log('Min duration:', Math.round(stats.minDuration * 100) / 100 + ' ms');
+    if (process.env.NODE_ENV === "development") {
+      console.group("⚡ Performance Stats");
+      console.log("Total measurements:", stats.total);
+      console.log(
+        "Average duration:",
+        Math.round(stats.avgDuration * 100) / 100 + " ms"
+      );
+      console.log(
+        "Max duration:",
+        Math.round(stats.maxDuration * 100) / 100 + " ms"
+      );
+      console.log(
+        "Min duration:",
+        Math.round(stats.minDuration * 100) / 100 + " ms"
+      );
       console.groupEnd();
     }
   },
