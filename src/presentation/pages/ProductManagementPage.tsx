@@ -24,12 +24,14 @@ import { ProductListItem } from '../../application/usecases/product/GetProductLi
 import { useProductList } from '../hooks/useProductList';
 import { useBOMTree } from '../hooks/useBOMTree';
 import { useBOMOperations } from '../hooks/useBOMOperations';
+import { useProductHistory } from '../hooks/useProductHistory';
 import { ProductTable } from '../components/product/ProductTable';
 import { ProductSearchFilter } from '../components/product/ProductSearchFilter';
 import { ProductFormModal } from '../components/modals/ProductFormModal';
 import { BOMTreeTable } from '../components/bom/BOMTreeTable';
 import { BOMCompareModal } from '../components/bom/BOMCompareModal';
 import { BOMItemModal } from '../components/modals/BOMItemModal';
+import { ProductHistoryModal } from '../components/modals/ProductHistoryModal';
 import { Pagination } from '../components/common/Pagination';
 import { Container, Card, Button, Flex, Select, TabContainer, TabList, Tab, TabPanel } from '../utils/styled';
 import { DIContainer } from '../../config/DIContainer';
@@ -57,9 +59,11 @@ export const ProductManagementPage: React.FC = () => {
   // === 로컬 상태 관리 ===
   const [selectedProduct, setSelectedProduct] = useState<ProductListItem | undefined>(); // 선택된 제품 (수정용)
   const [selectedProductForBOM, setSelectedProductForBOM] = useState<ProductListItem | undefined>(); // BOM 관리용 선택된 제품
+  const [selectedProductForHistory, setSelectedProductForHistory] = useState<ProductListItem | undefined>(); // 이력 조회용 선택된 제품
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);                          // 폼 모달 열림 상태
   const [isBOMCompareModalOpen, setIsBOMCompareModalOpen] = useState(false);             // BOM 비교 모달 열림 상태
   const [isBOMItemModalOpen, setIsBOMItemModalOpen] = useState(false);                   // BOM 아이템 모달 열림 상태
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);                   // 이력 모달 열림 상태
   const [editingBOMNode, setEditingBOMNode] = useState<any | undefined>();               // 수정 중인 BOM 노드
   const [parentBOMNode, setParentBOMNode] = useState<any | undefined>();                 // 부모 BOM 노드 (하위 추가용)
   const [pageSize, setPageSizeState] = useState(10);                                     // 페이지당 표시 개수
@@ -80,6 +84,16 @@ export const ProductManagementPage: React.FC = () => {
   const {
     deleteBOMItem,
   } = useBOMOperations();
+
+  // === 제품 이력 관리 훅 ===
+  const {
+    histories,
+    loading: historyLoading,
+    error: historyError,
+    loadHistory,
+    clearHistory,
+    refresh: refreshHistory,
+  } = useProductHistory();
 
   // === 의존성 주입 - UseCase 가져오기 ===
   const deleteProductUseCase = DIContainer.getInstance().getDeleteProductUseCase();
@@ -128,13 +142,15 @@ export const ProductManagementPage: React.FC = () => {
   };
 
   /**
-   * 제품 이력 조회 (향후 구현)
+   * 제품 이력 조회
    * @param product 이력을 조회할 제품
    */
-  const handleViewHistory = (product: ProductListItem) => {
-    // TODO: 제품 이력 조회 모달 구현
-    console.log('View history for product:', product);
-    alert(`제품 이력 조회 기능은 추후 구현 예정입니다. (제품: ${product.nm_material})`);
+  const handleViewHistory = async (product: ProductListItem) => {
+    setSelectedProductForHistory(product);
+    setIsHistoryModalOpen(true);
+    
+    // 이력 데이터 로드
+    await loadHistory(product.id);
   };
 
   /**
@@ -218,6 +234,15 @@ export const ProductManagementPage: React.FC = () => {
     setEditingBOMNode(undefined);
     setParentBOMNode(undefined);
   }, [refreshBOMTree]);
+
+  /**
+   * 이력 모달 닫기 처리
+   */
+  const handleHistoryModalClose = useCallback(() => {
+    setIsHistoryModalOpen(false);
+    setSelectedProductForHistory(undefined);
+    clearHistory(); // 이력 데이터 초기화
+  }, [clearHistory]);
 
   // === 렌더링 ===
   return (
@@ -489,6 +514,18 @@ export const ProductManagementPage: React.FC = () => {
           onSuccess={handleBOMItemSuccess}
         />
       )}
+
+      {/* 제품 이력 조회 모달 */}
+      <ProductHistoryModal
+        isOpen={isHistoryModalOpen}
+        productName={selectedProductForHistory?.nm_material || ''}
+        productCode={selectedProductForHistory?.cd_material || ''}
+        histories={histories}
+        loading={historyLoading}
+        error={historyError}
+        onClose={handleHistoryModalClose}
+        onRefresh={() => refreshHistory()}
+      />
     </Container>
   );
 };

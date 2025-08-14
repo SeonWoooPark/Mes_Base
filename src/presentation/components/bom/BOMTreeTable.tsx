@@ -38,7 +38,7 @@ interface BOMTreeTableProps {
 const TreeCell = styled.div<{ level: number; hasChildren: boolean }>`
   display: flex;
   align-items: center;
-  padding-left: ${props => props.level * 20}px;
+  padding-left: ${props => Math.max(0, props.level - 1) * 20}px;
   
   .tree-toggle {
     width: 20px;
