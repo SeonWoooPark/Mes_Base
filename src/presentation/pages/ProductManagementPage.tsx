@@ -29,6 +29,7 @@ import { ProductSearchFilter } from '../components/product/ProductSearchFilter';
 import { ProductFormModal } from '../components/modals/ProductFormModal';
 import { BOMTreeTable } from '../components/bom/BOMTreeTable';
 import { BOMCompareModal } from '../components/bom/BOMCompareModal';
+import { BOMItemModal } from '../components/modals/BOMItemModal';
 import { Pagination } from '../components/common/Pagination';
 import { Container, Card, Button, Flex, Select, TabContainer, TabList, Tab, TabPanel } from '../utils/styled';
 import { DIContainer } from '../../config/DIContainer';
@@ -58,6 +59,9 @@ export const ProductManagementPage: React.FC = () => {
   const [selectedProductForBOM, setSelectedProductForBOM] = useState<ProductListItem | undefined>(); // BOM 관리용 선택된 제품
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);                          // 폼 모달 열림 상태
   const [isBOMCompareModalOpen, setIsBOMCompareModalOpen] = useState(false);             // BOM 비교 모달 열림 상태
+  const [isBOMItemModalOpen, setIsBOMItemModalOpen] = useState(false);                   // BOM 아이템 모달 열림 상태
+  const [editingBOMNode, setEditingBOMNode] = useState<any | undefined>();               // 수정 중인 BOM 노드
+  const [parentBOMNode, setParentBOMNode] = useState<any | undefined>();                 // 부모 BOM 노드 (하위 추가용)
   const [pageSize, setPageSizeState] = useState(10);                                     // 페이지당 표시 개수
 
   // === BOM 관련 훅 ===
@@ -172,9 +176,9 @@ export const ProductManagementPage: React.FC = () => {
    * @param node BOM 노드
    */
   const handleEditBOMItem = useCallback((node: any) => {
-    // TODO: BOM 아이템 모달 구현 후 연결
-    console.log('Edit BOM item:', node);
-    alert('BOM 아이템 수정 기능은 Week 5에서 구현됩니다.');
+    setEditingBOMNode(node);
+    setParentBOMNode(undefined); // 수정 모드에서는 부모 노드 없음
+    setIsBOMItemModalOpen(true);
   }, []);
 
   /**
@@ -200,10 +204,20 @@ export const ProductManagementPage: React.FC = () => {
    * @param node 부모 BOM 노드
    */
   const handleAddChildBOMItem = useCallback((node: any) => {
-    // TODO: BOM 아이템 추가 모달 구현 후 연결
-    console.log('Add child BOM item:', node);
-    alert('BOM 하위 아이템 추가 기능은 Week 5에서 구현됩니다.');
+    setEditingBOMNode(undefined); // 신규 추가 모드에서는 수정 노드 없음
+    setParentBOMNode(node); // 부모 노드 설정
+    setIsBOMItemModalOpen(true);
   }, []);
+
+  /**
+   * BOM 아이템 모달 성공 처리
+   */
+  const handleBOMItemSuccess = useCallback(() => {
+    refreshBOMTree(); // BOM 트리 새로고침
+    setIsBOMItemModalOpen(false);
+    setEditingBOMNode(undefined);
+    setParentBOMNode(undefined);
+  }, [refreshBOMTree]);
 
   // === 렌더링 ===
   return (
@@ -212,7 +226,9 @@ export const ProductManagementPage: React.FC = () => {
         {/* 헤더 영역 - 타이틀 및 신규 등록 버튼 */}
         <Flex justify="space-between" align="center" style={{ marginBottom: '20px' }}>
           <h1 style={{ margin: 0, color: '#333' }}>제품정보 관리</h1>
-          <Button onClick={handleCreateProduct}>신규 등록</Button>
+          {activeTab === 'products' && (
+            <Button onClick={handleCreateProduct}>신규 등록</Button>
+          )}
         </Flex>
 
         {/* 탭 네비게이션 */}
@@ -461,6 +477,18 @@ export const ProductManagementPage: React.FC = () => {
         } as any))}
         initialSourceProductId={selectedProductForBOM?.id}
       />
+
+      {/* BOM 아이템 추가/수정 모달 */}
+      {selectedProductForBOM && (
+        <BOMItemModal
+          isOpen={isBOMItemModalOpen}
+          node={editingBOMNode}
+          parentNode={parentBOMNode}
+          productId={selectedProductForBOM.id}
+          onClose={() => setIsBOMItemModalOpen(false)}
+          onSuccess={handleBOMItemSuccess}
+        />
+      )}
     </Container>
   );
 };

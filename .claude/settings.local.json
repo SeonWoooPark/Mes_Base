@@ -9,7 +9,8 @@
       "Bash(rm:*)",
       "Bash(npm install:*)",
       "Bash(mv:*)"
-    ]
+    ],
+    "defaultMode": "acceptEdits"
   },
   "enabledMcpjsonServers": [
     "browserbase",
