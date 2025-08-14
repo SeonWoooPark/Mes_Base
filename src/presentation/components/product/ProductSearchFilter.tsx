@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ProductFilter } from '../../../domain/repositories/ProductRepository';
 import { ProductType } from '../../../domain/entities/Product';
-import { SearchContainer, Input, Select, Button, Flex } from '../../utils/styled';
+import { Input, Select, Button } from '../../utils/styled';
 
 interface ProductSearchFilterProps {
   onSearch: (keyword: string) => void;
@@ -21,7 +21,7 @@ export const ProductSearchFilter: React.FC<ProductSearchFilterProps> = ({
     onSearch(searchKeyword.trim());
   };
 
-  const handleFilterChange = () => {
+  const handleFilterChange = useCallback(() => {
     const filters: ProductFilter[] = [];
 
     if (selectedType) {
@@ -33,7 +33,7 @@ export const ProductSearchFilter: React.FC<ProductSearchFilterProps> = ({
     }
 
     onFilter(filters);
-  };
+  }, [selectedType, selectedStatus, onFilter]);
 
   const handleClear = () => {
     setSearchKeyword('');
@@ -45,51 +45,54 @@ export const ProductSearchFilter: React.FC<ProductSearchFilterProps> = ({
 
   React.useEffect(() => {
     handleFilterChange();
-  }, [selectedType, selectedStatus, onFilter]);
+  }, [handleFilterChange]);
 
   return (
-    <SearchContainer>
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', flex: 1 }}>
+    <div style={{ 
+      display: 'flex', 
+      gap: '12px', 
+      marginBottom: '20px', 
+      alignItems: 'center',
+      flexWrap: 'nowrap', // 한 줄에 모든 요소 표시
+      overflow: 'auto' // 필요시 스크롤
+    }}>
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '0' }}>
         <Input
           type="text"
           placeholder="제품코드, 제품명으로 검색..."
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
-          style={{ minWidth: '300px' }}
+          style={{ flex: 1, minWidth: '200px' }} // 반응형 크기 조정
         />
-        <Button type="submit">검색</Button>
+        <Button type="submit" style={{ whiteSpace: 'nowrap' }}>검색</Button>
       </form>
 
-      <Flex gap={12}>
-        <div>
-          <Select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            style={{ minWidth: '120px' }}
-          >
-            <option value="">전체 유형</option>
-            <option value={ProductType.FINISHED_PRODUCT}>완제품</option>
-            <option value={ProductType.SEMI_FINISHED}>반제품</option>
-            <option value={ProductType.RAW_MATERIAL}>원자재</option>
-          </Select>
-        </div>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <Select
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value)}
+          style={{ minWidth: '100px', width: '100px' }}
+        >
+          <option value="">전체 유형</option>
+          <option value={ProductType.FINISHED_PRODUCT}>완제품</option>
+          <option value={ProductType.SEMI_FINISHED}>반제품</option>
+          <option value={ProductType.RAW_MATERIAL}>원자재</option>
+        </Select>
 
-        <div>
-          <Select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            style={{ minWidth: '100px' }}
-          >
-            <option value="">전체 상태</option>
-            <option value="active">사용</option>
-            <option value="inactive">미사용</option>
-          </Select>
-        </div>
+        <Select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          style={{ minWidth: '100px', width: '100px' }}
+        >
+          <option value="">전체 상태</option>
+          <option value="active">사용</option>
+          <option value="inactive">미사용</option>
+        </Select>
 
-        <Button variant="secondary" onClick={handleClear}>
+        <Button variant="secondary" onClick={handleClear} style={{ whiteSpace: 'nowrap' }}>
           초기화
         </Button>
-      </Flex>
-    </SearchContainer>
+      </div>
+    </div>
   );
 };
