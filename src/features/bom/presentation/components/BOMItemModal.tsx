@@ -5,7 +5,7 @@ import { UpdateBOMItemRequest } from '../../application/usecases/bom/UpdateBOMIt
 import { ComponentType } from '../../domain/entities/BOMItem';
 import { ProductListItem } from '@features/product/application/usecases/product/GetProductListUseCase';
 import { useBOMOperations } from '../hooks/useBOMOperations';
-import { useProductList } from '@features/product/presentation/hooks/useProductList';
+import { ProductSearchInput } from '@shared/components/common/ProductSearchInput';
 import { 
   Modal, 
   ModalContent, 
@@ -100,7 +100,6 @@ export const BOMItemModal: React.FC<BOMItemModalProps> = ({
 
   // === 훅 사용 ===
   const { addBOMItem, updateBOMItem, adding, updating } = useBOMOperations();
-  const { products, loading: productsLoading, setSearchKeyword } = useProductList();
 
   const isEdit = !!node;
   const isLoading = adding || updating;
@@ -124,6 +123,17 @@ export const BOMItemModal: React.FC<BOMItemModalProps> = ({
           isOptional: node.isOptional,
           remarks: node.remarks || '',
         });
+        // 수정 모드에서는 기존 제품 정보로 설정
+        setSelectedProduct({
+          id: node.componentId,
+          cd_material: node.componentCode,
+          nm_material: node.componentName,
+          type: node.componentType,
+          unitName: node.unitName,
+          safetyStock: 0,
+          isActive: true,
+        } as ProductListItem);
+        setShowProductSearch(false);
       } else {
         // 신규 모드: 기본값으로 초기화
         setFormData({
@@ -140,9 +150,10 @@ export const BOMItemModal: React.FC<BOMItemModalProps> = ({
           isOptional: false,
           remarks: '',
         });
+        setSelectedProduct(null);
+        setShowProductSearch(false);
       }
       setErrors({});
-      setSelectedProduct(null);
     }
   }, [isOpen, node]);
 
@@ -171,18 +182,22 @@ export const BOMItemModal: React.FC<BOMItemModalProps> = ({
   }, [formData]);
 
   // === 구성품 선택 ===
-  const handleProductSelect = (product: ProductListItem) => {
+  const handleProductSelect = useCallback((product: ProductListItem) => {
     setFormData(prev => ({
       ...prev,
       componentId: product.id,
       componentCode: product.cd_material,
       componentName: product.nm_material,
       componentType: ComponentType.RAW_MATERIAL, // 기본값, 사용자가 변경 가능
-      unitName: 'EA', // 기본값
+      unitName: product.unitName || 'EA', // 제품의 단위 또는 기본값
     }));
     setSelectedProduct(product);
-    setShowProductSearch(false);
-  };
+    
+    // 에러 클리어
+    if (errors.componentId) {
+      setErrors(prev => ({ ...prev, componentId: undefined }));
+    }
+  }, [errors.componentId]);
 
   // === 폼 제출 ===
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,62 +283,83 @@ export const BOMItemModal: React.FC<BOMItemModalProps> = ({
           {/* 구성품 선택 영역 */}
           <FormGroup>
             <label>구성품 *</label>
-            <Flex gap={8}>
-              <Input
-                value={selectedProduct ? `${selectedProduct.cd_material} - ${selectedProduct.nm_material}` : '구성품을 선택하세요'}
-                readOnly
-                onClick={() => setShowProductSearch(true)}
-                style={{ cursor: 'pointer', flex: 1 }}
-                placeholder="클릭하여 구성품 선택"
-              />
-              <Button type="button" onClick={() => setShowProductSearch(true)}>
-                선택
-              </Button>
-            </Flex>
-            {errors.componentId && <div className="error">{errors.componentId}</div>}
+            {selectedProduct ? (
+              <Flex gap={8} align="center">
+                <div style={{ 
+                  flex: 1, 
+                  padding: '8px 12px',
+                  background: '#f8f9fa',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '4px',
+                  borderLeft: '4px solid #007bff'
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                    {selectedProduct.cd_material}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    {selectedProduct.nm_material}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+                    {selectedProduct.type} • {selectedProduct.unitName}
+                  </div>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  size="small"
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setShowProductSearch(true);
+                    setFormData(prev => ({
+                      ...prev,
+                      componentId: '',
+                      componentCode: '',
+                      componentName: '',
+                    }));
+                  }}
+                >
+                  변경
+                </Button>
+              </Flex>
+            ) : (
+              <Flex gap={8}>
+                <Input
+                  value="구성품을 선택하세요"
+                  readOnly
+                  onClick={() => setShowProductSearch(true)}
+                  style={{ cursor: 'pointer', flex: 1, color: '#999' }}
+                  placeholder="클릭하여 구성품 선택"
+                />
+                <Button type="button" onClick={() => setShowProductSearch(true)}>
+                  선택
+                </Button>
+              </Flex>
+            )}
+            {errors.componentId && <div className="error" style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.componentId}</div>}
           </FormGroup>
 
           {/* 구성품 검색 영역 */}
           {showProductSearch && (
             <FormGroup>
               <label>구성품 검색</label>
-              <Input
-                type="text"
-                placeholder="제품명 또는 제품코드로 검색"
-                onChange={(e) => setSearchKeyword(e.target.value)}
+              <ProductSearchInput
+                onSelect={(product) => {
+                  handleProductSelect(product);
+                  setShowProductSearch(false);
+                }}
+                onCancel={() => setShowProductSearch(false)}
+                placeholder="제품명 또는 제품코드로 검색..."
+                autoFocus
+                searchOptions={{
+                  maxResults: 20,
+                  searchFields: ['name', 'code'],
+                  minLength: 1,
+                  debounceDelay: 300,
+                }}
               />
               
-              <div style={{ 
-                maxHeight: '200px', 
-                overflowY: 'auto', 
-                border: '1px solid #ddd', 
-                borderRadius: '4px',
-                marginTop: '8px'
-              }}>
-                {productsLoading ? (
-                  <div style={{ padding: '20px', textAlign: 'center' }}>
-                    <LoadingSpinner />
-                  </div>
-                ) : (
-                  products.map((product: any) => (
-                    <div
-                      key={product.id}
-                      onClick={() => handleProductSelect(product)}
-                      style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #eee'
-                      }}
-                    >
-                      <div style={{ fontWeight: 'bold' }}>{product.cd_material}</div>
-                      <div style={{ fontSize: '14px', color: '#666' }}>{product.nm_material}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-              
-              <Flex gap={8} style={{ marginTop: '8px' }}>
-                <Button type="button" onClick={() => setShowProductSearch(false)}>
+              <Flex gap={8} style={{ marginTop: '12px' }}>
+                <Button type="button" variant="secondary" onClick={() => setShowProductSearch(false)}>
                   취소
                 </Button>
               </Flex>

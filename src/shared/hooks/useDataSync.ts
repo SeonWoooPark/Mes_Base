@@ -140,7 +140,7 @@ const mockServerSync = async (events: SyncEvent[]): Promise<{
 export const useDataSync = (): SyncState & DataSyncActions => {
   // === 상태 관리 ===
   const [state, setState] = useState<SyncState>({
-    isOnline: navigator.onLine,
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true, // SSR 안전성
     isSyncing: false,
     lastSyncTime: null,
     pendingChanges: 0,

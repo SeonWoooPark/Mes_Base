@@ -14,11 +14,16 @@ export const Card = styled.div`
   margin-bottom: 20px;
 `;
 
-export const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  padding: 8px 16px;
+export const Button = styled.button<{ 
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  size?: 'small' | 'medium' | 'large';
+}>`
+  padding: ${({ size = 'medium' }) => 
+    size === 'small' ? '6px 12px' : size === 'large' ? '10px 20px' : '8px 16px'};
   border-radius: 4px;
-  border: none;
-  font-size: 14px;
+  border: ${({ variant }) => (variant === 'outline' ? '1px solid #6c757d' : 'none')};
+  font-size: ${({ size = 'medium' }) => 
+    size === 'small' ? '12px' : size === 'large' ? '16px' : '14px'};
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -42,6 +47,12 @@ export const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'dange
           background: #dc3545;
           color: white;
           &:hover { background: #c82333; }
+        `;
+      case 'outline':
+        return `
+          background: transparent;
+          color: #6c757d;
+          &:hover { background: rgba(108, 117, 125, 0.1); }
         `;
       default:
         return `
@@ -226,10 +237,10 @@ export const Pagination = styled.div`
   }
 `;
 
-export const LoadingSpinner = styled.div`
+export const LoadingSpinner = styled.div<{ size?: 'small' | 'medium' | 'large' }>`
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: ${({ size = 'medium' }) => (size === 'small' ? '16px' : size === 'large' ? '28px' : '20px')};
+  height: ${({ size = 'medium' }) => (size === 'small' ? '16px' : size === 'large' ? '28px' : '20px')};
   border: 2px solid #f3f3f3;
   border-top: 2px solid #007bff;
   border-radius: 50%;

@@ -414,6 +414,15 @@ export const LazyProductManagementPage = lazyLoad(
   }
 );
 
+export const LazyBOMManagementPage = lazyLoad(
+  () => import('@features/bom/presentation/pages/BOMManagementPage').then(module => ({ default: module.BOMManagementPage })),
+  {
+    chunkName: 'bom-management-page',
+    fallback: () => <DefaultLoadingFallback message="BOM 관리 페이지를 불러오는 중..." />,
+    preload: true,
+  }
+);
+
 export const LazyDashboardPage = lazyLoad(
   () => Promise.resolve({ default: () => <div>대시보드 페이지 (개발 중)</div> }),
   {
@@ -499,6 +508,7 @@ export const BundleAnalysis = {
         'product-table',
         'navigation',
         'product-management-page',
+        'bom-management-page',
         'dashboard-page',
         'inventory-page',
         'production-page',

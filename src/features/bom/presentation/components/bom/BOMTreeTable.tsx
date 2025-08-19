@@ -28,6 +28,7 @@ interface BOMTreeTableProps {
   onEditItem: (node: BOMTreeNode) => void; // 아이템 수정
   onDeleteItem: (node: BOMTreeNode) => void; // 아이템 삭제
   onAddChild: (node: BOMTreeNode) => void; // 하위 아이템 추가
+  onAddRootItem?: () => void;              // 루트 아이템 추가 (빈 BOM일 때)
   onSort?: (field: string, direction: 'asc' | 'desc') => void; // 정렬
   readonly?: boolean;                      // 읽기 전용 모드
 }
@@ -148,6 +149,7 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
   onEditItem,
   onDeleteItem,
   onAddChild,
+  onAddRootItem,
   onSort,
   readonly = false,
 }) => {
@@ -404,9 +406,23 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
       }}>
         <div style={{ fontSize: '18px', marginBottom: '8px' }}>📋</div>
         <div>BOM 데이터가 없습니다</div>
-        <div style={{ fontSize: '14px', marginTop: '4px' }}>
+        <div style={{ fontSize: '14px', marginTop: '4px', marginBottom: '20px' }}>
           구성품을 추가하여 BOM을 구성하세요.
         </div>
+        {!readonly && onAddRootItem && (
+          <Button 
+            variant="primary" 
+            onClick={onAddRootItem}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '14px'
+            }}
+          >
+            ➕ 첫 번째 구성품 추가
+          </Button>
+        )}
       </div>
     );
   }

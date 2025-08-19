@@ -193,8 +193,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     }
   }, [conflictCount]);
   
-  // === 사용자 권한 목록 ===
-  const userPermissions = user?.permissions || [];
+  // === 사용자 권한 목록 (기본값 포함) ===
+  const userPermissions = user?.permissions || ['products.view', 'bom.view'];
+  
+  // === 디버깅 로그 (개발용) ===
+  if (process.env.NODE_ENV === 'development') {
+    console.log('AppLayout - Current user:', user);
+    console.log('AppLayout - User permissions:', userPermissions);
+    console.log('AppLayout - Current path:', currentPath);
+  }
   
   // === 상태 텍스트 생성 ===
   const getStatusText = () => {

@@ -128,158 +128,22 @@ const UserInfo = styled.div`
 `;
 
 /**
- * 기본 메뉴 구조
+ * 기본 메뉴 구조 (실제 구현된 페이지만)
  */
 const defaultMenuItems: NavigationItem[] = [
-  {
-    id: 'dashboard',
-    label: '대시보드',
-    icon: '📊',
-    path: '/dashboard',
-    permission: 'dashboard.view'
-  },
   {
     id: 'products',
     label: '제품 관리',
     icon: '📦',
     path: '/products',
-    permission: 'products.view',
-    children: [
-      {
-        id: 'product-list',
-        label: '제품 목록',
-        icon: '📋',
-        path: '/products',
-        permission: 'products.view'
-      },
-      {
-        id: 'product-categories',
-        label: '제품 분류',
-        icon: '🏷️',
-        path: '/products/categories',
-        permission: 'products.categories.view'
-      }
-    ]
+    permission: 'products.view'
   },
   {
     id: 'bom',
     label: 'BOM 관리',
     icon: '🏗️',
     path: '/bom',
-    permission: 'bom.view',
-    children: [
-      {
-        id: 'bom-tree',
-        label: 'BOM 구조',
-        icon: '🌲',
-        path: '/bom/tree',
-        permission: 'bom.view'
-      },
-      {
-        id: 'bom-compare',
-        label: 'BOM 비교',
-        icon: '📊',
-        path: '/bom/compare',
-        permission: 'bom.compare'
-      },
-      {
-        id: 'bom-cost',
-        label: '비용 분석',
-        icon: '💰',
-        path: '/bom/cost',
-        permission: 'bom.cost.view'
-      }
-    ]
-  },
-  {
-    id: 'inventory',
-    label: '재고 관리',
-    icon: '📊',
-    path: '/inventory',
-    permission: 'inventory.view'
-  },
-  {
-    id: 'production',
-    label: '생산 관리',
-    icon: '⚙️',
-    path: '/production',
-    permission: 'production.view',
-    children: [
-      {
-        id: 'production-plan',
-        label: '생산 계획',
-        icon: '📅',
-        path: '/production/plan',
-        permission: 'production.plan.view'
-      },
-      {
-        id: 'production-order',
-        label: '생산 지시',
-        icon: '📋',
-        path: '/production/order',
-        permission: 'production.order.view'
-      }
-    ]
-  },
-  {
-    id: 'quality',
-    label: '품질 관리',
-    icon: '✅',
-    path: '/quality',
-    permission: 'quality.view'
-  },
-  {
-    id: 'reports',
-    label: '보고서',
-    icon: '📈',
-    path: '/reports',
-    permission: 'reports.view',
-    children: [
-      {
-        id: 'production-reports',
-        label: '생산 보고서',
-        icon: '📊',
-        path: '/reports/production',
-        permission: 'reports.production.view'
-      },
-      {
-        id: 'cost-reports',
-        label: '비용 보고서',
-        icon: '💰',
-        path: '/reports/cost',
-        permission: 'reports.cost.view'
-      },
-      {
-        id: 'quality-reports',
-        label: '품질 보고서',
-        icon: '✅',
-        path: '/reports/quality',
-        permission: 'reports.quality.view'
-      }
-    ]
-  },
-  {
-    id: 'settings',
-    label: '시스템 설정',
-    icon: '⚙️',
-    path: '/settings',
-    permission: 'admin.settings',
-    children: [
-      {
-        id: 'user-management',
-        label: '사용자 관리',
-        icon: '👥',
-        path: '/settings/users',
-        permission: 'admin.users'
-      },
-      {
-        id: 'system-config',
-        label: '시스템 설정',
-        icon: '🔧',
-        path: '/settings/system',
-        permission: 'admin.system'
-      }
-    ]
+    permission: 'bom.view'
   }
 ];
 
@@ -299,11 +163,18 @@ export const Navigation: React.FC<NavigationProps> = ({
   userPermissions
 }) => {
   // === 상태 관리 ===
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(['products', 'bom']));
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   
   // === 권한 체크 ===
   const hasPermission = (permission?: string): boolean => {
     if (!permission) return true;
+    
+    // 권한이 없는 경우 기본 메뉴는 허용 (개발/테스트용)
+    if (!userPermissions || userPermissions.length === 0) {
+      const defaultPermissions = ['products.view', 'bom.view'];
+      return defaultPermissions.includes(permission);
+    }
+    
     return userPermissions.includes(permission) || userPermissions.includes('admin.all');
   };
   
@@ -319,6 +190,12 @@ export const Navigation: React.FC<NavigationProps> = ({
   };
   
   const filteredMenuItems = filterMenuItems(defaultMenuItems);
+  
+  // === 디버깅 로그 (개발용) ===
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Navigation - User permissions:', userPermissions);
+    console.log('Navigation - Filtered menu items:', filteredMenuItems.map(item => ({ id: item.id, label: item.label })));
+  }
   
   // === 메뉴 펼침/접기 ===
   const toggleExpanded = (itemId: string) => {

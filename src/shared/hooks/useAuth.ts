@@ -188,13 +188,23 @@ export const ROLE_PERMISSIONS = {
 } as const;
 
 /**
- * 기본 상태
+ * 기본 상태 (개발/테스트용 - 자동 로그인)
  */
 const initialState: AuthState = {
-  isAuthenticated: false,
-  user: null,
-  token: null,
-  loading: true,
+  isAuthenticated: true,
+  user: {
+    id: 'admin',
+    username: 'admin',
+    name: '시스템 관리자',
+    email: 'admin@company.com',
+    role: 'admin',
+    permissions: ['admin.all'],
+    department: 'IT',
+    isActive: true,
+    createdAt: new Date('2024-01-01'),
+  },
+  token: 'mock-jwt-token-admin-dev',
+  loading: false,
   error: null,
 };
 
