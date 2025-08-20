@@ -14,10 +14,9 @@
  * - 간소화된 API
  */
 
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { cacheStrategyManager } from '@shared/cache/CacheStrategyManager';
 import { smartInvalidationManager } from '@shared/cache/SmartInvalidationManager';
 import { CachePerformanceMonitorWrapper } from '@shared/cache/CachePerformanceMonitor';
 

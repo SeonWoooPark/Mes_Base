@@ -1,7 +1,7 @@
 import { BOM } from '../../domain/entities/BOM';
 import { BOMId } from '../../domain/entities/BOMItem';
 import { ProductId } from '@features/product/domain/entities/Product';
-import { BOMRepository, BOMSearchCriteria, BOMFilter, BOMStatusFilter } from '../../domain/repositories/BOMRepository';
+import { BOMRepository, BOMSearchCriteria, BOMStatusFilter } from '../../domain/repositories/BOMRepository';
 import { ApiClient } from '@shared/services/api/ApiClient';
 
 /**

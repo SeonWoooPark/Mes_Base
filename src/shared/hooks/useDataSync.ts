@@ -311,7 +311,7 @@ export const useDataSync = (): SyncState & DataSyncActions => {
     if (settingsRef.current.autoSyncEnabled && state.isOnline) {
       setTimeout(() => syncNow(), 1000);
     }
-  }, [state.isOnline, syncNow]);
+  }, [state.isOnline, syncNow, saveToStorage]);
   
   // === 충돌 해결 ===
   const resolveConflict = useCallback(async (
@@ -362,7 +362,7 @@ export const useDataSync = (): SyncState & DataSyncActions => {
     } catch (error) {
       console.error('Conflict resolution error:', error);
     }
-  }, [addPendingChange]);
+  }, [addPendingChange, saveToStorage]);
   
   // === 자동 동기화 설정 ===
   const enableAutoSync = useCallback((enabled: boolean) => {
@@ -372,7 +372,7 @@ export const useDataSync = (): SyncState & DataSyncActions => {
     if (enabled && state.isOnline && pendingChangesRef.current.length > 0) {
       syncNow();
     }
-  }, [state.isOnline, syncNow]);
+  }, [state.isOnline, syncNow, saveToStorage]);
   
   const setSyncInterval = useCallback((intervalMs: number) => {
     settingsRef.current.syncIntervalMs = intervalMs;
@@ -390,7 +390,7 @@ export const useDataSync = (): SyncState & DataSyncActions => {
         }
       }, intervalMs);
     }
-  }, [state.isOnline, state.isSyncing, syncNow]);
+  }, [state.isOnline, state.isSyncing, syncNow, saveToStorage]);
   
   // === 캐시 관리 ===
   const clearCache = useCallback(() => {
@@ -420,7 +420,7 @@ export const useDataSync = (): SyncState & DataSyncActions => {
       ...prev,
       pendingChanges: pendingChangesRef.current.length,
     }));
-  }, []);
+  }, [saveToStorage]);
   
   // === 자동 동기화 인터벌 설정 ===
   useEffect(() => {

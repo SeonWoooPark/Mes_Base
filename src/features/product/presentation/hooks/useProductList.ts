@@ -25,7 +25,10 @@ export const useProductList = () => {
   // Zustand 스토어에서 UI 상태 조회
   const productView = useAppStoreSelectors.useProductView();
   const productFilters = useAppStoreSelectors.useProductFilters();
-  const { product: productActions } = useAppStore();
+  // Zustand 액션들을 개별 selector로 안정적으로 참조 (불필요한 재생성/리렌더 방지)
+  const setViewAction = useAppStore(s => s.product.setView);
+  const setSearchKeywordAction = useAppStore(s => s.product.setSearchKeyword);
+  const setFiltersAction = useAppStore(s => s.product.setFilters);
 
   // UseCase 가져오기
   const getProductListUseCase = ProductDI.getProductListUseCase();
@@ -61,29 +64,29 @@ export const useProductList = () => {
 
   // 편의 메서드들
   const setPage = useCallback((page: number) => {
-    productActions.setView({ currentPage: page });
-  }, [productActions]);
+    setViewAction({ currentPage: page });
+  }, [setViewAction]);
 
   const setPageSize = useCallback((pageSize: number) => {
-    productActions.setView({ 
+    setViewAction({ 
       pageSize, 
       currentPage: 1 // 페이지 크기 변경시 첫 페이지로
     });
-  }, [productActions]);
+  }, [setViewAction]);
 
   const setSearchKeyword = useCallback((keyword: string) => {
-    productActions.setSearchKeyword(keyword);
-  }, [productActions]);
+    setSearchKeywordAction(keyword);
+  }, [setSearchKeywordAction]);
 
   const setFilters = useCallback((filters: ProductFilter[]) => {
     // ProductFilter[]를 string[] 형태로 변환하여 저장 (호환성을 위해)
-    const filterStrings = filters.map(f => `${f.field}:${f.value}`);
-    productActions.setFilters(filterStrings);
-  }, [productActions]);
+    const filterStrings = filters.map(f => `${f.field}:${String(f.value)}`);
+    setFiltersAction(filterStrings);
+  }, [setFiltersAction]);
 
   const setSortBy = useCallback((sortBy: string, direction: 'asc' | 'desc') => {
-    productActions.setView({ sortBy, sortDirection: direction });
-  }, [productActions]);
+    setViewAction({ sortBy, sortDirection: direction });
+  }, [setViewAction]);
 
   // 파생된 상태들 (useMemo로 최적화)
   const derivedState = useMemo(() => {
@@ -124,6 +127,7 @@ export const useProductList = () => {
     productListQuery.isStale,
     productListQuery.isFetching,
     productListQuery.refetch,
+    productListQuery,
     setPage,
     setPageSize,
     setSearchKeyword,

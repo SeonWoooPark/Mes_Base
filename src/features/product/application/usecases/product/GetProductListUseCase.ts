@@ -17,12 +17,8 @@
  * @inject - 생성자 매개변수에 주입될 토큰을 명시
  */
 
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import type { ProductRepository, ProductFilter, ProductSearchCriteria } from '../../../domain/repositories/ProductRepository';
-import * as ProductDIModule from '../../../config/ProductDIModule';
-
-// Token 상수 추출
-const PRODUCT_TOKENS = ProductDIModule.PRODUCT_TOKENS;
 
 /**
  * 제품 목록 조회 요청 인터페이스
@@ -77,8 +73,8 @@ export interface GetProductListResponse {
 @injectable()
 export class GetProductListUseCase {
   constructor(
-    @inject(PRODUCT_TOKENS.ProductRepository) private productRepository: ProductRepository,    // 데이터 조회를 위한 저장소 인터페이스
-    @inject(PRODUCT_TOKENS.ProductPresenter) private productPresenter: ProductPresenter       // 도메인 데이터의 표시용 변환 담당
+    private productRepository: ProductRepository,    // 데이터 조회를 위한 저장소 인터페이스
+    private productPresenter: ProductPresenter       // 도메인 데이터의 표시용 변환 담당
   ) {}
 
   /**

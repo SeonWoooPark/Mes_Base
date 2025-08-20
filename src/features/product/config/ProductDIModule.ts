@@ -138,8 +138,13 @@ export class ProductDIModule {
     
     // === Application Layer (UseCase) 설정 ===
     
-    // GetProductListUseCase (자동 의존성 주입)
-    diContainer.registerSingleton(PRODUCT_TOKENS.GetProductListUseCase, GetProductListUseCase);
+    // GetProductListUseCase
+    diContainer.register(PRODUCT_TOKENS.GetProductListUseCase, {
+      useFactory: (c) => new GetProductListUseCase(
+        c.resolve(PRODUCT_TOKENS.ProductRepository),
+        c.resolve(PRODUCT_TOKENS.ProductPresenter)
+      )
+    });
     
     // CreateProductUseCase
     diContainer.register(PRODUCT_TOKENS.CreateProductUseCase, {

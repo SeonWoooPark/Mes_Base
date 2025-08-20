@@ -9,7 +9,6 @@ import {
   ModalContent, 
   Button, 
   Input, 
-  Select, 
   FormGroup, 
   Flex, 
   LoadingSpinner 
@@ -99,7 +98,7 @@ export const BOMCopyModal: React.FC<BOMCopyModalProps> = ({
 
   // === 훅 사용 ===
   const { copyBOM, copying } = useBOMOperations();
-  const { products, loading: productsLoading, setSearchKeyword, setFilters } = useProductList();
+  const { products, loading: productsLoading, setSearchKeyword } = useProductList();
 
   // === 폼 초기화 ===
   useEffect(() => {

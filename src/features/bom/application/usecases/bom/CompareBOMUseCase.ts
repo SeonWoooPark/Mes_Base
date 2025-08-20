@@ -386,8 +386,9 @@ export class CompareBOMUseCase {
 
     // 루트까지 역순으로 추적
     while (currentItem.getParentItemId()) {
+      const parentItemId = currentItem.getParentItemId()!;
       const parentItem = bom.getBOMItems().find(i => 
-        i.getId().equals(currentItem.getParentItemId()!)
+        i.getId().equals(parentItemId)
       );
       if (!parentItem) break;
 

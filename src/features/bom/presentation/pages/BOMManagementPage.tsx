@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductListItem } from '@features/product/application/usecases/product/GetProductListUseCase';
 import { useProductList } from '@features/product/presentation/hooks/useProductList';
 import { useBOMTree } from '../hooks/useBOMTree';
@@ -27,6 +27,7 @@ import { BOMCopyModal } from '../components/BOMCopyModal';
 import { BOMStatistics } from '../components/bom/BOMStatistics';
 import { ProductSearchInput } from '@shared/components/common/ProductSearchInput';
 import { Container, Card, Button, Flex, Input, Select, LoadingSpinner } from '@shared/utils/styled';
+import { useAppStore } from '@shared/stores/appStore';
 import styled from 'styled-components';
 
 /**
@@ -195,7 +196,8 @@ const EmptyState = styled.div`
  */
 export const BOMManagementPage: React.FC = () => {
   // === URL 파라미터 처리 ===
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialProductId = searchParams.get('productId');
 
   // === 상태 관리 ===
@@ -237,6 +239,9 @@ export const BOMManagementPage: React.FC = () => {
     deleteBOMItem,
   } = useBOMOperations();
 
+  // === Zustand 스토어 액션 ===
+  const { bom: bomActions } = useAppStore();
+
   // === 초기화 Effect ===
   useEffect(() => {
     // URL 파라미터로 제품 ID가 전달된 경우 해당 제품 로딩
@@ -270,11 +275,25 @@ export const BOMManagementPage: React.FC = () => {
 
   /**
    * 제품 선택 해제 핸들러
+   * URL 파라미터를 제거하여 완전히 초기화된 상태로 만듦
    */
   const handleProductClear = useCallback(() => {
+    // 선택된 제품 초기화
     setSelectedProduct(undefined);
     setShowProductSearch(true);
-  }, []);
+    
+    // BOM 트리 상태 완전 초기화 (Zustand store)
+    bomActions.resetBOMTree();
+    
+    // URL에서 productId 파라미터 제거하여 깨끗한 상태로 초기화
+    // 이렇게 하면 사이드바에서 BOM 관리에 진입한 것과 동일한 상태가 됨
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('productId');
+    newSearchParams.delete('name');  // 제품명 파라미터도 제거
+    
+    // URL을 /bom으로 깔끔하게 초기화
+    navigate('/bom', { replace: true });
+  }, [navigate, searchParams, bomActions]);
 
   /**
    * BOM 트리 새로고침

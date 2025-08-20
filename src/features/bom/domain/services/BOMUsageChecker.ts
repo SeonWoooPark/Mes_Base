@@ -1,5 +1,4 @@
 // 외부 엔티티 import
-import { BOM } from '../entities/BOM';
 import { BOMId } from '../entities/BOMItem';
 import { BOMItem, BOMItemId } from '../entities/BOMItem';
 import { ProductId } from '@features/product/domain/entities/Product';

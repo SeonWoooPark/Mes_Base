@@ -184,6 +184,7 @@ export const useBOMTree = (productId?: string) => {
     bomTreeQuery.isStale,
     bomTreeQuery.isFetching,
     bomTreeQuery.refetch,
+    bomTreeQuery,
     expandNode,
     collapseNode,
     toggleNode,

@@ -538,6 +538,8 @@ function initializeBOMHistories(): void {
   const yesterday = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
   const lastWeek = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+  // BOM History 초기화 데이터 (현재 미사용)
+  /*
   const historyDataList = [
     {
       id: 'bom-hist-001',
@@ -552,155 +554,10 @@ function initializeBOMHistories(): void {
       changedFields: [],
       beforeData: undefined,
       afterData: undefined
-    },
-    {
-      id: 'bom-hist-002',
-      bomId: 'bom-001',
-      action: BOMHistoryAction.ADD_ITEM,
-      targetId: 'bom-item-001',
-      targetType: 'BOM_ITEM' as const,
-      userId: 'admin',
-      userName: '관리자',
-      timestamp: new Date(lastWeek.getTime() + 60000), // 1분 후
-      description: '실리콘 원료 구성품 추가',
-      changedFields: [],
-      beforeData: undefined,
-      afterData: undefined
-    },
-    {
-      id: 'bom-hist-003',
-      bomId: 'bom-001',
-      action: BOMHistoryAction.ADD_ITEM,
-      targetId: 'bom-item-002',
-      targetType: 'BOM_ITEM' as const,
-      userId: 'admin',
-      userName: '관리자',
-      timestamp: new Date(lastWeek.getTime() + 120000), // 2분 후
-      description: '플라스틱 펠릿 구성품 추가',
-      changedFields: [],
-      beforeData: undefined,
-      afterData: undefined
-    },
-    {
-      id: 'bom-hist-004',
-      bomId: 'bom-001',
-      action: BOMHistoryAction.UPDATE_ITEM,
-      targetId: 'bom-item-001',
-      targetType: 'BOM_ITEM' as const,
-      userId: 'admin',
-      userName: '관리자',
-      timestamp: yesterday,
-      description: '실리콘 원료 수량 조정',
-      changedFields: [
-        {
-          fieldName: 'quantity',
-          oldValue: '45.0',
-          newValue: '50.0',
-          fieldLabel: '수량'
-        }
-      ],
-      beforeData: '45.0g',
-      afterData: '50.0g'
-    },
-    {
-      id: 'bom-hist-005',
-      bomId: 'bom-002',
-      action: BOMHistoryAction.CREATE_BOM,
-      targetId: 'bom-002',
-      targetType: 'BOM' as const,
-      userId: 'manager',
-      userName: '매니저',
-      timestamp: lastWeek,
-      description: '무선 충전기 BOM 신규 생성',
-      changedFields: [],
-      beforeData: undefined,
-      afterData: undefined
-    },
-    {
-      id: 'bom-hist-006',
-      bomId: 'bom-002',
-      action: BOMHistoryAction.ADD_ITEM,
-      targetId: 'bom-item-003',
-      targetType: 'BOM_ITEM' as const,
-      userId: 'manager',
-      userName: '매니저',
-      timestamp: new Date(lastWeek.getTime() + 300000), // 5분 후
-      description: '충전 코일 구성품 추가',
-      changedFields: [],
-      beforeData: undefined,
-      afterData: undefined
-    },
-    {
-      id: 'bom-hist-007',
-      bomId: 'bom-003',
-      action: BOMHistoryAction.DEACTIVATE_BOM,
-      targetId: 'bom-003',
-      targetType: 'BOM' as const,
-      userId: 'manager',
-      userName: '매니저',
-      timestamp: yesterday,
-      description: '블루투스 이어폰 BOM 단종으로 인한 비활성화',
-      changedFields: [
-        {
-          fieldName: 'isActive',
-          oldValue: 'true',
-          newValue: 'false',
-          fieldLabel: '활성 상태'
-        }
-      ],
-      beforeData: '활성',
-      afterData: '비활성'
-    },
-    {
-      id: 'bom-hist-008',
-      bomId: 'bom-004',
-      action: BOMHistoryAction.CREATE_BOM,
-      targetId: 'bom-004',
-      targetType: 'BOM' as const,
-      userId: 'manager',
-      userName: '매니저',
-      timestamp: new Date(currentDate.getTime() - 5 * 24 * 60 * 60 * 1000),
-      description: '스마트워치 BOM 신규 생성',
-      changedFields: [],
-      beforeData: undefined,
-      afterData: undefined
-    },
-    {
-      id: 'bom-hist-009',
-      bomId: 'bom-002',
-      action: BOMHistoryAction.UPDATE_ITEM,
-      targetId: 'bom-item-005',
-      targetType: 'BOM_ITEM' as const,
-      userId: 'manager',
-      userName: '매니저',
-      timestamp: currentDate,
-      description: '배터리 팩 단가 업데이트',
-      changedFields: [
-        {
-          fieldName: 'unitCost',
-          oldValue: '23.0',
-          newValue: '25.0',
-          fieldLabel: '단가'
-        }
-      ],
-      beforeData: '23.0원',
-      afterData: '25.0원'
-    },
-    {
-      id: 'bom-hist-010',
-      bomId: 'bom-004',
-      action: BOMHistoryAction.ADD_ITEM,
-      targetId: 'bom-item-008',
-      targetType: 'BOM_ITEM' as const,
-      userId: 'manager',
-      userName: '매니저',
-      timestamp: currentDate,
-      description: 'LCD 디스플레이 패널 구성품 추가',
-      changedFields: [],
-      beforeData: undefined,
-      afterData: undefined
     }
+    // ... 기타 history 데이터들
   ];
+  */
 
   // 간소화된 BOM History 데이터 - 필수 매개변수만 사용
   bomHistories = [

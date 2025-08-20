@@ -15,6 +15,10 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { enableMapSet } from 'immer';
+
+// Immer에서 Map/Set 지원 활성화 (Zustand + immer 미들웨어에서 Set 사용 시 필수)
+enableMapSet();
 
 /**
  * 전역 UI 상태 타입 정의
@@ -151,6 +155,7 @@ export interface AppActions {
     setComparison: (source: { id: string; name: string } | null, target: { id: string; name: string } | null) => void;
     expandAllNodes: () => void;
     collapseAllNodes: () => void;
+    resetBOMTree: () => void;
   };
 
   // === 에러 관리 액션들 ===
@@ -384,6 +389,17 @@ export const useAppStore = create<AppState & AppActions>()(
 
           collapseAllNodes: () => set(state => {
             state.bom.tree.expandedNodes.clear();
+          }),
+
+          resetBOMTree: () => set(state => {
+            // BOM 트리 관련 모든 상태를 초기화
+            state.bom.tree.expandedNodes.clear();
+            state.bom.tree.selectedNode = null;
+            // BOM 선택도 초기화
+            state.bom.selectedBOM = null;
+            // 비교 상태도 초기화
+            state.bom.comparison.sourceBOM = null;
+            state.bom.comparison.targetBOM = null;
           }),
         },
 

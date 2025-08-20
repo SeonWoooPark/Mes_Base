@@ -11,8 +11,7 @@ import {
   FormGroup, 
   Flex, 
   Card,
-  LoadingSpinner,
-  StatusBadge
+  LoadingSpinner
 } from '@shared/utils/styled';
 import styled from 'styled-components';
 

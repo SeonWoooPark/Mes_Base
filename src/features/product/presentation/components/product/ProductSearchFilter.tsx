@@ -33,7 +33,9 @@ export const ProductSearchFilter: React.FC<ProductSearchFilterProps> = ({
     }
 
     onFilter(filters);
-  }, [selectedType, selectedStatus, onFilter]);
+    // onFilter는 부모에서 전달되는 prop이므로 의존성에 넣으면 불안정해져 무한 루프의 원인이 될 수 있음
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType, selectedStatus]);
 
   const handleClear = () => {
     setSearchKeyword('');

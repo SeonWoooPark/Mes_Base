@@ -166,7 +166,7 @@ export const useBOMComparison = (
         await new Promise(resolve => setTimeout(resolve, 0));
       }
       return comparisonQuery.refetch();
-    }, [bomActions, comparisonQuery.refetch]),
+    }, [bomActions, comparisonQuery.refetch, comparisonQuery]),
     refresh: comparisonQuery.refetch,
 
     // 액션 - 필터 및 보기

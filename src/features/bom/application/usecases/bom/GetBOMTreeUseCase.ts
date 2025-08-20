@@ -1,7 +1,6 @@
 // 외부 엔티티 import
 import { BOM } from '../../../domain/entities/BOM';
-import { BOMId } from '../../../domain/entities/BOMItem';
-import { BOMItem, BOMItemId, ComponentType } from '../../../domain/entities/BOMItem';
+import { BOMItem, ComponentType } from '../../../domain/entities/BOMItem';
 import { Product, ProductId } from '@features/product/domain/entities/Product';
 import { BOMRepository } from '../../../domain/repositories/BOMRepository';
 import { BOMItemRepository } from '../../../domain/repositories/BOMItemRepository';
