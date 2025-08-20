@@ -22,22 +22,32 @@ export class HttpProductHistoryRepository implements ProductHistoryRepository {
   constructor(private apiClient: ApiClient) {}
 
   async findByProductId(productId: ProductId): Promise<ProductHistory[]> {
-    const response = await this.apiClient.get<ProductHistoryDto[]>(`/api/products/${productId.getValue()}/history`);
-    
-    if (!response.success) {
-      throw new Error('Failed to fetch product history');
-    }
+    try {
+      const response = await this.apiClient.get<ProductHistoryDto[]>(`/api/products/${productId.getValue()}/history`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch product history');
+      }
 
-    return response.data.map((dto: any) => this.mapDtoToEntity(dto));
+      return response.data.map((dto) => this.mapDtoToEntity(dto));
+    } catch (error) {
+      console.error('Error fetching product history:', error);
+      throw new Error('Failed to fetch product history from server');
+    }
   }
 
   async save(history: ProductHistory): Promise<void> {
-    const dto = this.mapEntityToDto(history);
-    
-    const response = await this.apiClient.post('/api/product-history', dto);
-    
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to save product history');
+    try {
+      const dto = this.mapEntityToDto(history);
+      
+      const response = await this.apiClient.post('/api/product-history', dto);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to save product history');
+      }
+    } catch (error) {
+      console.error('Error saving product history:', error);
+      throw new Error('Failed to save product history to server');
     }
   }
 

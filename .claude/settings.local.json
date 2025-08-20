@@ -31,5 +31,6 @@
     "memory",
     "filesystem",
     "DeepGraph TypeScript MCP"
-  ]
+  ],
+  "outputStyle": "Learning"
 }

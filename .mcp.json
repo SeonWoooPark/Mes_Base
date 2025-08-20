@@ -2,9 +2,7 @@
   "mcpServers": {
     "browserbase": {
       "command": "npx",
-      "args": [
-        "@browserbasehq/mcp-server-browserbase"
-      ],
+      "args": ["@browserbasehq/mcp-server-browserbase"],
       "env": {
         "BROWSERBASE_API_KEY": "",
         "BROWSERBASE_PROJECT_ID": "",
@@ -15,42 +13,30 @@
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-postgres"
-      ],
-      "env": {
-        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/dbname"
-      }
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://admin:coint4602@112.160.112.121:60003/postgres?options=-c%20search_path%3DMesTest"
+      ]
     },
     "DeepGraph React MCP": {
       "command": "npx",
-      "args": [
-        "-y",
-        "mcp-code-graph@latest",
-        "facebook/react"
-      ]
+      "args": ["-y", "mcp-code-graph@latest", "facebook/react"]
     },
     "memory": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
     },
     "filesystem": {
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/path/to/allowed/files"
+        "/Users/seonwoo/Documents/Coint/FrontEnd_Base",
+        "/Users/seonwoo/Documents/Coint/Mes_BackEnd"
       ]
     },
     "DeepGraph TypeScript MCP": {
       "command": "npx",
-      "args": [
-        "-y",
-        "mcp-code-graph@latest",
-        "microsoft/TypeScript"
-      ]
+      "args": ["-y", "mcp-code-graph@latest", "microsoft/TypeScript"]
     }
   }
 }
