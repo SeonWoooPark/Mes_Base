@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -24,7 +24,68 @@ interface ProductTableProps {
 
 const columnHelper = createColumnHelper<ProductListItem>();
 
-export const ProductTable: React.FC<ProductTableProps> = ({
+// StatusBadge 메모화된 컴포넌트
+const MemoizedStatusBadge = memo<{ active: boolean; children: React.ReactNode }>(
+  ({ active, children }) => (
+    <StatusBadge active={active}>{children}</StatusBadge>
+  )
+);
+MemoizedStatusBadge.displayName = 'MemoizedStatusBadge';
+
+// 액션 버튼 컴포넌트 메모화
+const ActionButtons = memo<{
+  product: ProductListItem;
+  onEdit: (product: ProductListItem) => void;
+  onDelete: (product: ProductListItem) => void;
+  onViewHistory: (product: ProductListItem) => void;
+  onBOMManage?: (product: ProductListItem) => void;
+}>(({ product, onEdit, onDelete, onViewHistory, onBOMManage }) => {
+  const handleEdit = useCallback(() => onEdit(product), [onEdit, product]);
+  const handleDelete = useCallback(() => onDelete(product), [onDelete, product]);
+  const handleViewHistory = useCallback(() => onViewHistory(product), [onViewHistory, product]);
+  const handleBOMManage = useCallback(() => onBOMManage?.(product), [onBOMManage, product]);
+
+  return (
+    <Flex gap={4}>
+      <Button 
+        variant="secondary" 
+        onClick={handleEdit}
+        style={{ fontSize: '12px', padding: '4px 8px' }}
+      >
+        수정
+      </Button>
+      <Button 
+        variant="danger" 
+        onClick={handleDelete}
+        style={{ fontSize: '12px', padding: '4px 8px' }}
+      >
+        삭제
+      </Button>
+      <Button 
+        onClick={handleViewHistory}
+        style={{ fontSize: '12px', padding: '4px 8px' }}
+      >
+        이력
+      </Button>
+      {onBOMManage && (
+        <Button 
+          onClick={handleBOMManage}
+          style={{ 
+            fontSize: '12px', 
+            padding: '4px 8px',
+            background: '#28a745',
+            color: 'white'
+          }}
+        >
+          BOM
+        </Button>
+      )}
+    </Flex>
+  );
+});
+ActionButtons.displayName = 'ActionButtons';
+
+export const ProductTable: React.FC<ProductTableProps> = memo(({
   products,
   loading,
   onSort,
@@ -35,7 +96,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const columns = React.useMemo<ColumnDef<ProductListItem, any>[]>(
+  const columns = useMemo<ColumnDef<ProductListItem, any>[]>(
     () => [
       columnHelper.accessor('cd_material', {
         header: '제품코드',
@@ -69,9 +130,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
         header: '상태',
         enableSorting: false,
         cell: (info) => (
-          <StatusBadge active={info.row.original.isActive}>
+          <MemoizedStatusBadge active={info.row.original.isActive}>
             {info.getValue()}
-          </StatusBadge>
+          </MemoizedStatusBadge>
         ),
       }),
       columnHelper.accessor('lastUpdated', {
@@ -83,41 +144,13 @@ export const ProductTable: React.FC<ProductTableProps> = ({
         header: '작업',
         enableSorting: false,
         cell: (info) => (
-          <Flex gap={4}>
-            <Button 
-              variant="secondary" 
-              onClick={() => onEdit(info.row.original)}
-              style={{ fontSize: '12px', padding: '4px 8px' }}
-            >
-              수정
-            </Button>
-            <Button 
-              variant="danger" 
-              onClick={() => onDelete(info.row.original)}
-              style={{ fontSize: '12px', padding: '4px 8px' }}
-            >
-              삭제
-            </Button>
-            <Button 
-              onClick={() => onViewHistory(info.row.original)}
-              style={{ fontSize: '12px', padding: '4px 8px' }}
-            >
-              이력
-            </Button>
-            {onBOMManage && (
-              <Button 
-                onClick={() => onBOMManage(info.row.original)}
-                style={{ 
-                  fontSize: '12px', 
-                  padding: '4px 8px',
-                  background: '#28a745',
-                  color: 'white'
-                }}
-              >
-                BOM
-              </Button>
-            )}
-          </Flex>
+          <ActionButtons
+            product={info.row.original}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onViewHistory={onViewHistory}
+            onBOMManage={onBOMManage}
+          />
         ),
       }),
     ],
@@ -135,12 +168,16 @@ export const ProductTable: React.FC<ProductTableProps> = ({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  React.useEffect(() => {
+  const handleSortingEffect = useCallback(() => {
     if (sorting.length > 0) {
       const sort = sorting[0];
       onSort(sort.id, sort.desc ? 'desc' : 'asc');
     }
   }, [sorting, onSort]);
+
+  React.useEffect(() => {
+    handleSortingEffect();
+  }, [handleSortingEffect]);
 
   if (loading) {
     return (
@@ -203,4 +240,5 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       </tbody>
     </Table>
   );
-};
+});
+ProductTable.displayName = 'ProductTable';

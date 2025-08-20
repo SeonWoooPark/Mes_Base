@@ -281,9 +281,9 @@ export const BOMManagementPage: React.FC = () => {
    */
   const handleRefreshBOM = useCallback(() => {
     if (selectedProduct) {
-      loadBOMTree({ productId: selectedProduct.id });
+      refreshBOMTree();
     }
-  }, [selectedProduct, loadBOMTree]);
+  }, [selectedProduct, refreshBOMTree]);
 
   /**
    * BOM 아이템 수정 핸들러

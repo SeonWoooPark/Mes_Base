@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { 
   GetBOMTreeRequest, 
   GetBOMTreeResponse, 
@@ -6,22 +6,10 @@ import {
   BOMInfo 
 } from '../../application/usecases/bom/GetBOMTreeUseCase';
 import { ComponentType } from '../../domain/entities/BOMItem';
-import { DIContainer } from '@app/config/DIContainer';
-
-/**
- * BOM 트리 상태 인터페이스
- */
-export interface UseBOMTreeState {
-  bomInfo: BOMInfo | null;               // BOM 기본 정보
-  treeNodes: BOMTreeNode[];              // 트리 노드 목록
-  expandedNodes: Set<string>;            // 펼쳐진 노드 ID 집합
-  filteredNodes: BOMTreeNode[];          // 필터링된 노드 목록
-  totalItems: number;                    // 총 아이템 수
-  totalCost: number;                     // 총 비용
-  maxLevel: number;                      // 최대 레벨
-  loading: boolean;                      // 로딩 상태
-  error: string | null;                  // 에러 상태
-}
+import { BOMDI } from '../../config/BOMDIModule';
+import { useFeatureQuery, useFeatureMutation } from '@shared/hooks/useFeatureQuery';
+import { useAppStore, useAppStoreSelectors } from '@shared/stores/appStore';
+import { createQueryKey } from '@app/providers/QueryProvider';
 
 /**
  * BOM 트리 필터 옵션
@@ -44,8 +32,260 @@ export interface BOMTreeFilter {
 }
 
 /**
- * BOM 트리 액션 인터페이스
+ * 현대화된 useBOMTree Hook
+ * 
+ * TanStack Query v5 + Zustand를 활용한 새로운 상태 관리:
+ * - 서버 상태: TanStack Query로 캐싱 및 동기화
+ * - UI 상태: Zustand로 트리 확장/축소, 필터 등 관리
+ * - 자동 에러 처리 및 알림
+ * - 백그라운드 동기화
+ * - 트리 상태 최적화
  */
+export const useBOMTree = (productId?: string) => {
+  // Zustand 스토어에서 BOM UI 상태 조회
+  const bomTree = useAppStoreSelectors.useBomTree();
+  const bomComparison = useAppStoreSelectors.useBomComparison();
+  const { bom: bomActions } = useAppStore();
+
+  // UseCase 가져오기
+  const getBOMTreeUseCase = BOMDI.getBOMTreeUseCase();
+
+  // 현재 요청 구성 (useMemo로 최적화)
+  const currentRequest: GetBOMTreeRequest = useMemo(() => ({
+    productId: productId || '',
+    includeInactive: true, // TODO: 필터에서 가져오기
+    maxLevel: 10, // TODO: 설정 가능하도록
+  }), [productId]);
+
+  // TanStack Query를 통한 BOM 트리 조회
+  const bomTreeQuery = useFeatureQuery<GetBOMTreeResponse>({
+    feature: 'bom',
+    operation: 'tree',
+    params: currentRequest,
+    queryFn: () => getBOMTreeUseCase.execute(currentRequest),
+    enabled: !!productId, // productId가 있을 때만 실행
+    staleTime: 1000 * 60 * 5, // 5분간 fresh
+    gcTime: 1000 * 60 * 15,   // 15분간 캐시 유지 (BOM은 좀 더 짧게)
+    onError: (error) => {
+      console.error('BOM tree query error:', error);
+    },
+  });
+
+  // 편의 메서드들 - 트리 노드 확장/축소
+  const expandNode = useCallback((nodeId: string) => {
+    bomActions.expandNode(nodeId);
+  }, [bomActions]);
+
+  const collapseNode = useCallback((nodeId: string) => {
+    bomActions.collapseNode(nodeId);
+  }, [bomActions]);
+
+  const toggleNode = useCallback((nodeId: string) => {
+    if (bomTree.expandedNodes.has(nodeId)) {
+      bomActions.collapseNode(nodeId);
+    } else {
+      bomActions.expandNode(nodeId);
+    }
+  }, [bomTree.expandedNodes, bomActions]);
+
+  const expandAll = useCallback(() => {
+    bomActions.expandAllNodes();
+  }, [bomActions]);
+
+  const collapseAll = useCallback(() => {
+    bomActions.collapseAllNodes();
+  }, [bomActions]);
+
+  const expandToLevel = useCallback((level: number) => {
+    // 특정 레벨까지만 확장하는 로직
+    const response = bomTreeQuery.data;
+    if (!response?.treeNodes) return;
+
+    const nodesToExpand = new Set<string>();
+    
+    const collectNodesToLevel = (nodes: BOMTreeNode[], currentLevel: number) => {
+      for (const node of nodes) {
+        if (currentLevel < level) {
+          nodesToExpand.add(node.id);
+          if (node.children) {
+            collectNodesToLevel(node.children, currentLevel + 1);
+          }
+        }
+      }
+    };
+
+    collectNodesToLevel(response.treeNodes, 0);
+    
+    // Zustand 액션으로 한번에 설정
+    bomActions.setExpandedNodes(nodesToExpand);
+  }, [bomTreeQuery.data, bomActions]);
+
+  // 필터링 관련
+  const setFilter = useCallback((filter: BOMTreeFilter) => {
+    // TODO: 필터 상태를 Zustand에 저장하고 필터링 로직 구현
+    console.log('Setting BOM filter:', filter);
+  }, []);
+
+  const clearFilter = useCallback(() => {
+    // TODO: 필터 초기화
+    console.log('Clearing BOM filter');
+  }, []);
+
+  // 파생된 상태들 (useMemo로 최적화)
+  const derivedState = useMemo(() => {
+    const response = bomTreeQuery.data;
+    const bomInfo = response?.bomInfo || null;
+    const treeNodes = response?.treeNodes || [];
+    
+    return {
+      bomInfo,
+      treeNodes,
+      filteredNodes: treeNodes, // 현재는 원본과 동일, 추후 필터 로직 구현
+      totalItems: response?.totalItems || 0,
+      totalCost: response?.totalCost || 0,
+      maxLevel: response?.maxLevel || 0,
+    };
+  }, [bomTreeQuery.data]);
+
+  return useMemo(() => ({
+    // 데이터
+    ...derivedState,
+    expandedNodes: bomTree.expandedNodes,
+
+    // 상태
+    loading: bomTreeQuery.isLoading,
+    error: bomTreeQuery.error?.message || null,
+    isStale: bomTreeQuery.isStale,
+    isFetching: bomTreeQuery.isFetching,
+
+    // 액션 - 트리 조작
+    expandNode,
+    collapseNode,
+    toggleNode,
+    expandAll,
+    collapseAll,
+    expandToLevel,
+
+    // 액션 - 데이터 관리
+    loadBOMTree: bomTreeQuery.refetch, // refetch로 대체
+    refresh: bomTreeQuery.refetch,
+
+    // 액션 - 필터링
+    setFilter,
+    clearFilter,
+
+    // TanStack Query 원본 객체 (고급 사용을 위해)
+    query: bomTreeQuery,
+  }), [
+    derivedState,
+    bomTree.expandedNodes,
+    bomTreeQuery.isLoading,
+    bomTreeQuery.error,
+    bomTreeQuery.isStale,
+    bomTreeQuery.isFetching,
+    bomTreeQuery.refetch,
+    expandNode,
+    collapseNode,
+    toggleNode,
+    expandAll,
+    collapseAll,
+    expandToLevel,
+    setFilter,
+    clearFilter,
+  ]);
+};
+
+/**
+ * BOM 아이템 추가를 위한 Mutation Hook
+ */
+export const useAddBOMItem = () => {
+  const addBOMItemUseCase = BOMDI.addBOMItemUseCase();
+
+  return useFeatureMutation({
+    feature: 'bom',
+    operation: 'addItem',
+    mutationFn: (variables: any) => addBOMItemUseCase.execute(variables),
+    invalidateQueries: [createQueryKey.bom.all()],
+    onSuccess: () => {
+      // 성공시 아이템 모달 닫기
+      useAppStore.getState().bom.closeItemModal();
+    },
+  });
+};
+
+/**
+ * BOM 아이템 수정을 위한 Mutation Hook
+ */
+export const useUpdateBOMItem = () => {
+  const updateBOMItemUseCase = BOMDI.updateBOMItemUseCase();
+
+  return useFeatureMutation({
+    feature: 'bom',
+    operation: 'updateItem',
+    mutationFn: (variables: any) => updateBOMItemUseCase.execute(variables),
+    invalidateQueries: [createQueryKey.bom.all()],
+    onSuccess: () => {
+      useAppStore.getState().bom.closeItemModal();
+    },
+  });
+};
+
+/**
+ * BOM 아이템 삭제를 위한 Mutation Hook
+ */
+export const useDeleteBOMItem = () => {
+  const deleteBOMItemUseCase = BOMDI.deleteBOMItemUseCase();
+
+  return useFeatureMutation({
+    feature: 'bom',
+    operation: 'deleteItem',
+    mutationFn: (variables: { bomItemId: string; reason: string; id_updated: string }) => 
+      deleteBOMItemUseCase.execute({
+        bomItemId: variables.bomItemId,
+        deleteReason: variables.reason,
+        id_updated: variables.id_updated,
+      }),
+    invalidateQueries: [createQueryKey.bom.all()],
+    optimisticUpdate: () => {
+      // 낙관적 업데이트: UI에서 즉시 항목 제거
+      // TODO: 실제 구현 시 queryClient.setQueryData 활용
+    },
+  });
+};
+
+/**
+ * BOM 복사를 위한 Mutation Hook
+ */
+export const useCopyBOM = () => {
+  const copyBOMUseCase = BOMDI.copyBOMUseCase();
+
+  return useFeatureMutation({
+    feature: 'bom',
+    operation: 'copy',
+    mutationFn: (variables: any) => copyBOMUseCase.execute(variables),
+    invalidateQueries: [createQueryKey.bom.all()],
+    onSuccess: () => {
+      useAppStore.getState().bom.closeCopyModal();
+    },
+  });
+};
+
+/**
+ * 레거시 호환성을 위한 인터페이스 유지 (점진적 마이그레이션용)
+ * @deprecated 새 컴포넌트에서는 useBOMTree() 직접 사용 권장
+ */
+export interface UseBOMTreeState {
+  bomInfo: BOMInfo | null;
+  treeNodes: BOMTreeNode[];
+  expandedNodes: Set<string>;
+  filteredNodes: BOMTreeNode[];
+  totalItems: number;
+  totalCost: number;
+  maxLevel: number;
+  loading: boolean;
+  error: string | null;
+}
+
 export interface UseBOMTreeActions {
   loadBOMTree: (request: GetBOMTreeRequest) => Promise<void>;
   expandNode: (nodeId: string) => void;
@@ -57,315 +297,4 @@ export interface UseBOMTreeActions {
   clearFilter: () => void;
   refresh: () => Promise<void>;
   toggleNode: (nodeId: string) => void;
-}
-
-/**
- * BOM 트리 관리 커스텀 훅
- * 
- * 주요 기능:
- * - BOM 트리 데이터 조회 및 상태 관리
- * - 트리 노드 펼침/접기 상태 관리
- * - 실시간 필터링 기능
- * - 트리 네비게이션 유틸리티
- * - 성능 최적화 (메모이제이션)
- */
-export const useBOMTree = (
-  productId?: string
-): UseBOMTreeState & UseBOMTreeActions => {
-  // === 상태 관리 ===
-  const [state, setState] = useState<UseBOMTreeState>({
-    bomInfo: null,
-    treeNodes: [],
-    expandedNodes: new Set(),
-    filteredNodes: [],
-    totalItems: 0,
-    totalCost: 0,
-    maxLevel: 0,
-    loading: false,
-    error: null,
-  });
-
-  const [currentRequest, setCurrentRequest] = useState<GetBOMTreeRequest | null>(null);
-  const [currentFilter, setCurrentFilter] = useState<BOMTreeFilter>({});
-
-  // === 의존성 주입 ===
-  const getBOMTreeUseCase = DIContainer.getInstance().getBOMTreeUseCase();
-
-  // === 트리 데이터 로드 ===
-  const loadBOMTree = useCallback(async (request: GetBOMTreeRequest) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-
-    try {
-      const response: GetBOMTreeResponse = await getBOMTreeUseCase.execute(request);
-
-      // 유스케이스는 중첩 트리 형태를 반환한다.
-      // 테이블은 parentId가 부모의 id를 가리키는 평면 리스트를 기대하므로 변환한다.
-      const flatNodes = flattenTreeNodes(response.treeNodes);
-
-      // 기본 확장 상태 설정 (레벨 1까지 자동 확장) - 평면화된 데이터 기준
-      const autoExpandedNodes = new Set<string>(
-        flatNodes
-          .filter(node => node.level <= 1)
-          .map(node => node.id)
-      );
-
-      setState(prev => ({
-        ...prev,
-        bomInfo: response.bomInfo,
-        treeNodes: flatNodes,
-        expandedNodes: request.expandAll ? new Set(flatNodes.map(n => n.id)) : autoExpandedNodes,
-        filteredNodes: flatNodes, // 초기에는 필터링 없음
-        totalItems: response.totalItems,
-        totalCost: response.totalCost,
-        maxLevel: response.maxLevel,
-        loading: false,
-      }));
-
-      setCurrentRequest(request);
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'BOM 조회 중 오류가 발생했습니다.',
-      }));
-    }
-  }, [getBOMTreeUseCase]);
-
-  // === 트리 노드 제어 ===
-  const expandNode = useCallback((nodeId: string) => {
-    setState(prev => ({
-      ...prev,
-      expandedNodes: new Set([...Array.from(prev.expandedNodes), nodeId]),
-    }));
-  }, []);
-
-  const collapseNode = useCallback((nodeId: string) => {
-    setState(prev => {
-      const newExpandedNodes = new Set(prev.expandedNodes);
-      newExpandedNodes.delete(nodeId);
-      
-      // 하위 노드들도 함께 접기
-      const childNodes = prev.treeNodes.filter(node => 
-        node.parentId === nodeId || 
-        prev.treeNodes.some(parent => 
-          parent.id === node.parentId && isDescendantOf(node, nodeId, prev.treeNodes)
-        )
-      );
-      
-      childNodes.forEach(child => newExpandedNodes.delete(child.id));
-
-      return {
-        ...prev,
-        expandedNodes: newExpandedNodes,
-      };
-    });
-  }, []);
-
-  const toggleNode = useCallback((nodeId: string) => {
-    setState(prev => {
-      if (prev.expandedNodes.has(nodeId)) {
-        // 접기
-        const newExpandedNodes = new Set(prev.expandedNodes);
-        newExpandedNodes.delete(nodeId);
-        
-        // 하위 노드들도 함께 접기
-        const childNodes = prev.treeNodes.filter(node => 
-          isDescendantOf(node, nodeId, prev.treeNodes)
-        );
-        childNodes.forEach(child => newExpandedNodes.delete(child.id));
-
-        return { ...prev, expandedNodes: newExpandedNodes };
-      } else {
-        // 펼치기
-        return { ...prev, expandedNodes: new Set([...Array.from(prev.expandedNodes), nodeId]) };
-      }
-    });
-  }, []);
-
-  const expandAll = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      expandedNodes: new Set(prev.treeNodes.map(node => node.id)),
-    }));
-  }, []);
-
-  const collapseAll = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      expandedNodes: new Set(), // 모든 노드 접기
-    }));
-  }, []);
-
-  const expandToLevel = useCallback((level: number) => {
-    setState(prev => ({
-      ...prev,
-      expandedNodes: new Set(
-        prev.treeNodes
-          .filter(node => node.level <= level)
-          .map(node => node.id)
-      ),
-    }));
-  }, []);
-
-  // === 필터링 ===
-  const applyFilter = useCallback((nodes: BOMTreeNode[], filter: BOMTreeFilter): BOMTreeNode[] => {
-    if (!filter || Object.keys(filter).length === 0) {
-      return nodes;
-    }
-
-    return nodes.filter(node => {
-      // 검색 키워드 필터
-      if (filter.searchKeyword && filter.searchKeyword.trim()) {
-        const keyword = filter.searchKeyword.toLowerCase();
-        const matches = 
-          node.componentCode.toLowerCase().includes(keyword) ||
-          node.componentName.toLowerCase().includes(keyword);
-        if (!matches) return false;
-      }
-
-      // 구성품 유형 필터
-      if (filter.componentTypes && filter.componentTypes.length > 0) {
-        if (!filter.componentTypes.includes(node.componentType as ComponentType)) {
-          return false;
-        }
-      }
-
-      // 레벨 필터
-      if (filter.levels && filter.levels.length > 0) {
-        if (!filter.levels.includes(node.level)) {
-          return false;
-        }
-      }
-
-      // 비활성 아이템 포함 여부
-      if (!filter.includeInactive && !node.isActive) {
-        return false;
-      }
-
-      // 선택사항 포함 여부
-      if (!filter.includeOptional && node.isOptional) {
-        return false;
-      }
-
-      // 공정 단계 필터
-      if (filter.processStep && filter.processStep.trim()) {
-        if (node.processStep !== filter.processStep) {
-          return false;
-        }
-      }
-
-      // 비용 범위 필터
-      if (filter.costRange) {
-        const totalCost = node.totalCost;
-        if (filter.costRange.min !== undefined && totalCost < filter.costRange.min) {
-          return false;
-        }
-        if (filter.costRange.max !== undefined && totalCost > filter.costRange.max) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, []);
-
-  const setFilter = useCallback((filter: BOMTreeFilter) => {
-    setCurrentFilter(filter);
-    setState(prev => ({
-      ...prev,
-      filteredNodes: applyFilter(prev.treeNodes, filter),
-    }));
-  }, [applyFilter]);
-
-  const clearFilter = useCallback(() => {
-    setCurrentFilter({});
-    setState(prev => ({
-      ...prev,
-      filteredNodes: prev.treeNodes,
-    }));
-  }, []);
-
-  // === 유틸리티 함수 ===
-  const refresh = useCallback(async () => {
-    if (currentRequest) {
-      await loadBOMTree(currentRequest);
-    }
-  }, [currentRequest, loadBOMTree]);
-
-  // === 초기 로드 ===
-  useEffect(() => {
-    if (productId) {
-      loadBOMTree({
-        productId,
-        maxLevel: 10, // 기본 최대 10레벨
-        includeInactive: false,
-        expandAll: false,
-      });
-    }
-  }, [productId, loadBOMTree]);
-
-  // === 필터 적용 ===
-  useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      filteredNodes: applyFilter(prev.treeNodes, currentFilter),
-    }));
-  }, [state.treeNodes, currentFilter, applyFilter]);
-
-  return {
-    // 상태
-    ...state,
-    
-    // 액션
-    loadBOMTree,
-    expandNode,
-    collapseNode,
-    expandAll,
-    collapseAll,
-    expandToLevel,
-    toggleNode,
-    setFilter,
-    clearFilter,
-    refresh,
-  };
-};
-
-// === 유틸리티 함수들 ===
-
-/**
- * 중첩된 BOM 트리 노드 배열을 테이블용 평면 리스트로 변환한다.
- * - parentId를 부모의 id로 맞춘다 (기존 DTO는 부모의 bomItemId를 갖고 있을 수 있음)
- */
-function flattenTreeNodes(nodes: BOMTreeNode[], parentId?: string): BOMTreeNode[] {
-  const result: BOMTreeNode[] = [];
-
-  nodes.forEach(node => {
-    const current: BOMTreeNode = { ...node, parentId };
-    result.push(current);
-
-    if (node.children && node.children.length > 0) {
-      result.push(...flattenTreeNodes(node.children, node.id));
-    }
-  });
-
-  return result;
-}
-
-/**
- * 노드가 특정 노드의 후손인지 확인
- */
-function isDescendantOf(node: BOMTreeNode, ancestorId: string, allNodes: BOMTreeNode[]): boolean {
-  let currentNode = node;
-  
-  while (currentNode.parentId) {
-    if (currentNode.parentId === ancestorId) {
-      return true;
-    }
-    
-    const parentNode = allNodes.find(n => n.id === currentNode.parentId);
-    if (!parentNode) break;
-    currentNode = parentNode;
-  }
-  
-  return false;
 }

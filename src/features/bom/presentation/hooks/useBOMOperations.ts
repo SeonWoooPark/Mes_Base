@@ -87,6 +87,10 @@ export interface UseBOMOperationsActions {
  * - 다른 컴포넌트와의 연동 (콜백 시스템)
  */
 export const useBOMOperations = (): UseBOMOperationsState & UseBOMOperationsActions => {
+  // 이 Hook은 이제 useBOMTree의 개별 mutation hooks로 대체됨
+  // 레거시 호환성을 위해 유지, 점진적으로 새 hooks 사용 권장
+  console.warn('useBOMOperations는 deprecated됩니다. useAddBOMItem, useUpdateBOMItem 등 개별 hooks 사용을 권장합니다.');
+  
   // === 상태 관리 ===
   const [state, setState] = useState<UseBOMOperationsState>({
     adding: false,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, memo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -131,6 +131,45 @@ const CostCell = styled.div`
 
 const columnHelper = createColumnHelper<BOMTreeNode>();
 
+// 메모화된 컴포넌트 타입 아이콘
+const MemoizedComponentTypeIcon = memo<{ type: ComponentType; children: React.ReactNode }>(
+  ({ type, children }) => (
+    <ComponentTypeIcon type={type}>{children}</ComponentTypeIcon>
+  )
+);
+MemoizedComponentTypeIcon.displayName = 'MemoizedComponentTypeIcon';
+
+// 메모화된 상태 배지
+const MemoizedStatusBadge = memo<{ 
+  active: boolean; 
+  children: React.ReactNode; 
+  style?: React.CSSProperties 
+}>(({ active, children, style }) => (
+  <StatusBadge active={active} style={style}>{children}</StatusBadge>
+));
+MemoizedStatusBadge.displayName = 'MemoizedStatusBadge';
+
+// 트리 토글 버튼 메모화
+const TreeToggleButton = memo<{
+  nodeId: string;
+  hasChildren: boolean;
+  isExpanded: boolean;
+  onToggle: (nodeId: string) => void;
+}>(({ nodeId, hasChildren, isExpanded, onToggle }) => {
+  const handleToggle = useCallback(() => onToggle(nodeId), [onToggle, nodeId]);
+  
+  return (
+    <button 
+      className="tree-toggle"
+      onClick={handleToggle}
+      title={isExpanded ? '접기' : '펼치기'}
+    >
+      {hasChildren ? (isExpanded ? '▼' : '▶') : ''}
+    </button>
+  );
+});
+TreeToggleButton.displayName = 'TreeToggleButton';
+
 /**
  * BOM 트리 테이블 컴포넌트
  * 
@@ -141,7 +180,7 @@ const columnHelper = createColumnHelper<BOMTreeNode>();
  * - 구성품 유형별 아이콘 표시
  * - 실시간 비용 계산 표시
  */
-export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
+export const BOMTreeTable: React.FC<BOMTreeTableProps> = memo(({
   nodes,
   expandedNodes,
   loading,
@@ -156,13 +195,13 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
   const [sorting, setSorting] = useState<SortingState>([]);
 
   // === 컴포넌트 유형 표시명 매핑 ===
-  const componentTypeLabels: Record<ComponentType, string> = {
+  const componentTypeLabels: Record<ComponentType, string> = useMemo(() => ({
     [ComponentType.RAW_MATERIAL]: '원자재',
     [ComponentType.SEMI_FINISHED]: '반제품',
     [ComponentType.PURCHASED_PART]: '구매품',
     [ComponentType.SUB_ASSEMBLY]: '조립품',
     [ComponentType.CONSUMABLE]: '소모품',
-  };
+  }), []);
 
   // === 하위 노드 확인 함수 ===
   const hasChildren = useCallback((nodeId: string): boolean => {
@@ -209,18 +248,17 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
         
         return (
           <TreeCell level={node.level} hasChildren={nodeHasChildren}>
-            <button 
-              className="tree-toggle"
-              onClick={() => onToggleNode(node.id)}
-              title={isExpanded ? '접기' : '펼치기'}
-            >
-              {nodeHasChildren ? (isExpanded ? '▼' : '▶') : ''}
-            </button>
+            <TreeToggleButton 
+              nodeId={node.id}
+              hasChildren={nodeHasChildren}
+              isExpanded={isExpanded}
+              onToggle={onToggleNode}
+            />
             
             <div className="tree-content">
-              <ComponentTypeIcon type={node.componentType as ComponentType}>
+              <MemoizedComponentTypeIcon type={node.componentType as ComponentType}>
                 {componentTypeLabels[node.componentType as ComponentType]?.[0] || 'C'}
-              </ComponentTypeIcon>
+              </MemoizedComponentTypeIcon>
               
               <div>
                 <div style={{ fontWeight: 'bold' }}>
@@ -319,13 +357,13 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
         const node = info.row.original;
         return (
           <Flex gap={4}>
-            <StatusBadge active={node.isActive}>
+            <MemoizedStatusBadge active={node.isActive}>
               {node.isActive ? '활성' : '비활성'}
-            </StatusBadge>
+            </MemoizedStatusBadge>
             {node.isOptional && (
-              <StatusBadge active={false} style={{ fontSize: '10px' }}>
+              <MemoizedStatusBadge active={false} style={{ fontSize: '10px' }}>
                 선택
-              </StatusBadge>
+              </MemoizedStatusBadge>
             )}
           </Flex>
         );
@@ -469,4 +507,5 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = ({
       </tbody>
     </Table>
   );
-};
+});
+BOMTreeTable.displayName = 'BOMTreeTable';

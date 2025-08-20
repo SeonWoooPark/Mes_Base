@@ -11,9 +11,18 @@
  * 
  * 데이터 흐름:
  * UI Request → UseCase → ProductRepository → Domain Entity → ProductListItem DTO → UI
+ * 
+ * 의존성 주입:
+ * @injectable - 이 클래스가 DI 컨테이너에 의해 관리됨을 표시
+ * @inject - 생성자 매개변수에 주입될 토큰을 명시
  */
 
-import { ProductRepository, ProductFilter, ProductSearchCriteria } from '../../../domain/repositories/ProductRepository';
+import { injectable, inject } from 'tsyringe';
+import type { ProductRepository, ProductFilter, ProductSearchCriteria } from '../../../domain/repositories/ProductRepository';
+import * as ProductDIModule from '../../../config/ProductDIModule';
+
+// Token 상수 추출
+const PRODUCT_TOKENS = ProductDIModule.PRODUCT_TOKENS;
 
 /**
  * 제품 목록 조회 요청 인터페이스
@@ -62,11 +71,14 @@ export interface GetProductListResponse {
 /**
  * 제품 목록 조회 유스케이스 클래스
  * Clean Architecture의 Application Layer에 위치
+ * 
+ * @injectable - tsyringe DI 컨테이너가 이 클래스의 인스턴스를 관리
  */
+@injectable()
 export class GetProductListUseCase {
   constructor(
-    private productRepository: ProductRepository,    // 데이터 조회를 위한 저장소 인터페이스
-    private productPresenter: ProductPresenter       // 도메인 데이터의 표시용 변환 담당
+    @inject(PRODUCT_TOKENS.ProductRepository) private productRepository: ProductRepository,    // 데이터 조회를 위한 저장소 인터페이스
+    @inject(PRODUCT_TOKENS.ProductPresenter) private productPresenter: ProductPresenter       // 도메인 데이터의 표시용 변환 담당
   ) {}
 
   /**

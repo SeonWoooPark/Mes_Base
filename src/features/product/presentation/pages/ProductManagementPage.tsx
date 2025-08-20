@@ -36,7 +36,7 @@ import { ProductFormModal } from '../components/ProductFormModal';
 import { ProductHistoryModal } from '../components/ProductHistoryModal';
 import { Pagination } from '@shared/components/common/Pagination';
 import { Container, Card, Button, Flex, Select } from '@shared/utils/styled';
-import { DIContainer } from '@app/config/DIContainer';
+import { useDeleteProduct } from '../hooks/useProductList';
 
 export const ProductManagementPage: React.FC = () => {
   // === React Router 네비게이션 ===
@@ -77,8 +77,8 @@ export const ProductManagementPage: React.FC = () => {
     refresh: refreshHistory,
   } = useProductHistory();
 
-  // === 의존성 주입 - UseCase 가져오기 ===
-  const deleteProductUseCase = DIContainer.getInstance().getDeleteProductUseCase();
+  // === 새로운 Hook 시스템 사용 ===
+  const deleteProductMutation = useDeleteProduct();
 
   // === 이벤트 핸들러들 ===
 
@@ -109,18 +109,14 @@ export const ProductManagementPage: React.FC = () => {
       return;
     }
 
-    try {
-      // DeleteProductUseCase 실행
-      await deleteProductUseCase.execute({
-        productId: product.id,
-        id_updated: 'current-user', // TODO: 실제 로그인된 사용자 ID 사용
-        reason: '사용자 요청에 의한 삭제',
-      });
-      
-      refresh(); // 목록 새로고침
-    } catch (error) {
-      alert(error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.');
-    }
+    // 새로운 Mutation Hook 사용
+    deleteProductMutation.mutate({
+      productId: product.id,
+      id_updated: 'current-user', // TODO: 실제 로그인된 사용자 ID 사용
+      reason: '사용자 요청에 의한 삭제',
+    });
+    
+    // Note: 성공/에러 처리는 useFeatureMutation에서 자동으로 처리됨
   };
 
   /**

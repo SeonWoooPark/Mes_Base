@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@tanstack/react-query": "^5.85.5",
+    "@tanstack/react-query-devtools": "^5.85.5",
     "@tanstack/react-table": "^8.10.7",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -19,14 +21,16 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
-    "react-query": "^3.39.3",
     "react-router-dom": "^6.20.1",
     "react-scripts": "5.0.1",
     "react-window": "^1.8.11",
+    "reflect-metadata": "^0.2.2",
     "styled-components": "^6.1.6",
+    "tsyringe": "^4.10.0",
     "typescript": "^4.9.5",
     "uuid": "^9.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zustand": "^5.0.7"
   },
   "scripts": {
     "start": "craco start",

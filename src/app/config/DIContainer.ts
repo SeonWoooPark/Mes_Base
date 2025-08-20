@@ -53,10 +53,13 @@ import { MockProductRepository } from '@features/product/infrastructure/reposito
 import { MockProductHistoryRepository } from '@features/product/infrastructure/repositories/MockProductHistoryRepository';
 import { MockProductUsageChecker } from '@features/product/infrastructure/repositories/MockProductUsageChecker';
 
-// BOM Mock Repository Imports
+// BOM Repository Imports (Mock and Http)
 import { MockBOMRepository } from '@features/bom/infrastructure/repositories/MockBOMRepository';
 import { MockBOMItemRepository } from '@features/bom/infrastructure/repositories/MockBOMItemRepository';
 import { MockBOMHistoryRepository } from '@features/bom/infrastructure/repositories/MockBOMHistoryRepository';
+import { HttpBOMRepository } from '@features/bom/infrastructure/repositories/HttpBOMRepository';
+import { HttpBOMItemRepository } from '@features/bom/infrastructure/repositories/HttpBOMItemRepository';
+import { HttpBOMHistoryRepository } from '@features/bom/infrastructure/repositories/HttpBOMHistoryRepository';
 
 /**
  * 제품 타입 표시 담당 클래스
@@ -152,15 +155,15 @@ export class DIContainer {
     // BOM Repository 구현체 선택
     const bomRepository = useMockData
       ? new MockBOMRepository()             // Mock: 메모리 내 BOM 데이터 사용
-      : new MockBOMRepository();            // TODO: 실제 HttpBOMRepository 구현 시 교체
+      : new HttpBOMRepository(apiClient);   // Real: REST API 호출
     
     const bomItemRepository = useMockData
       ? new MockBOMItemRepository()         // Mock: 메모리 내 BOM Item 데이터 사용
-      : new MockBOMItemRepository();        // TODO: 실제 HttpBOMItemRepository 구현 시 교체
+      : new HttpBOMItemRepository(apiClient); // Real: REST API 호출
     
     const bomHistoryRepository = useMockData
-      ? new MockBOMHistoryRepository()      // Mock: 메모리 내 BOM History 데이터 사용  
-      : new MockBOMHistoryRepository();     // TODO: 실제 HttpBOMHistoryRepository 구현 시 교체
+      ? new MockBOMHistoryRepository()      // Mock: 메모리 내 BOM History 데이터 사용
+      : new HttpBOMHistoryRepository(apiClient); // Real: REST API 호출
 
     // Repository 등록
     this.dependencies.set('ProductRepository', productRepository);
