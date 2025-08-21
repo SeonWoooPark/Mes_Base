@@ -23,15 +23,6 @@ interface BOMDto {
   dt_update: string;
 }
 
-/**
- * 페이징된 응답 인터페이스
- */
-interface PagedResponse<T> {
-  items: T[];
-  totalCount: number;
-  currentPage: number;
-  totalPages: number;
-}
 
 /**
  * BOM HTTP Repository 구현체
@@ -121,7 +112,7 @@ export class HttpBOMRepository implements BOMRepository {
 
   async findActiveByProductId(productId: ProductId): Promise<BOM | null> {
     try {
-      const response = await this.apiClient.get<BOMDto>(`/api/boms/product/${productId.getValue()}/active`);
+      const response = await this.apiClient.get<BOMDto>(`/api/boms/product/${productId.getValue()}/activate`);
       return response.success ? this.mapDtoToEntity(response.data) : null;
     } catch (error) {
       console.error('Failed to find active BOM by product id:', error);
@@ -177,13 +168,22 @@ export class HttpBOMRepository implements BOMRepository {
       });
     }
 
-    const response = await this.apiClient.get<PagedResponse<BOMDto>>(`/api/boms?${params}`);
+    const response = await this.apiClient.get<any>(`/api/boms?${params}`);
     
     if (!response.success) {
       throw new Error('Failed to fetch BOMs with criteria');
     }
 
-    return response.data.items.map(dto => this.mapDtoToEntity(dto));
+    // 백엔드 응답 구조에 맞게 수정: data 배열 직접 접근
+    const bomsData = response.data.data || response.data.items || response.data || [];
+    
+    // 배열인지 확인
+    if (!Array.isArray(bomsData)) {
+      console.error('Invalid BOM data structure:', response.data);
+      return [];
+    }
+
+    return bomsData.map(dto => this.mapDtoToEntity(dto));
   }
 
   async countByCriteria(criteria: BOMSearchCriteria): Promise<number> {
@@ -201,13 +201,15 @@ export class HttpBOMRepository implements BOMRepository {
       });
     }
 
-    const response = await this.apiClient.get<{ count: number }>(`/api/boms/count?${params}`);
+    // /api/boms/count 엔드포인트가 없을 경우 대안: 목록 조회하고 totalCount 사용
+    const response = await this.apiClient.get<any>(`/api/boms?${params}&page=1&pageSize=1`);
     
     if (!response.success) {
       throw new Error('Failed to count BOMs');
     }
 
-    return response.data.count;
+    // 백엔드 응답에서 totalCount 추출
+    return response.data.totalCount || response.data.count || 0;
   }
 
   async findByStatus(statusFilter: BOMStatusFilter): Promise<BOM[]> {
@@ -398,7 +400,7 @@ export class HttpBOMRepository implements BOMRepository {
 
   // === Private 변환 메서드들 ===
 
-  private mapDtoToEntity(dto: BOMDto): BOM {
+  private mapDtoToEntity(dto: any): BOM {
     const bomId = new BOMId(dto.id);
     const productId = new ProductId(dto.productId);
 
@@ -413,10 +415,10 @@ export class HttpBOMRepository implements BOMRepository {
       dto.isActive,
       bomItems,
       new Date(dto.effectiveDate),
-      dto.id_create,
-      dto.id_updated,
-      new Date(dto.dt_create),
-      new Date(dto.dt_update),
+      dto.id_create || dto.createdBy || 'system',
+      dto.id_updated || dto.updatedBy || 'system',
+      new Date(dto.dt_create || dto.createdAt),
+      new Date(dto.dt_update || dto.updatedAt),
       dto.expiryDate ? new Date(dto.expiryDate) : undefined,
       dto.description
     );

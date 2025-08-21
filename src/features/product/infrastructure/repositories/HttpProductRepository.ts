@@ -225,7 +225,7 @@ export class HttpProductRepository implements ProductRepository {
       dto.additionalInfo?.notes
     );
 
-    return new Product(
+    const product = new Product(
       productId,
       dto.cd_material,
       dto.nm_material,
@@ -240,6 +240,13 @@ export class HttpProductRepository implements ProductRepository {
       dto.dt_create ? new Date(dto.dt_create) : new Date(dto.lastUpdated),
       dto.dt_update ? new Date(dto.dt_update) : new Date(dto.lastUpdated)
     );
+    
+    // 디버깅: Product 인스턴스 확인
+    console.log('🔍 Created Product instance:', product);
+    console.log('🔍 Product constructor:', product.constructor.name);
+    console.log('🔍 canHaveBOM method exists?:', typeof product.canHaveBOM === 'function');
+    
+    return product;
   }
 
   private mapEntityToDto(product: Product): ProductDto {

@@ -143,18 +143,23 @@ export class GetBOMTreeUseCase {
 
     // 제품이 BOM을 가질 수 있는지 확인
     if (!product.canHaveBOM()) {
-      throw new Error('이 제품 유형은 BOM을 가질 수 없습니다.');
+        throw new Error('이 제품 유형은 BOM을 가질 수 없습니다.');
     }
 
+    console.log('🚀 request.productId:', request.productId);
+    console.log('🚀 request.version:', request.version);
     // 3. BOM 조회 (버전별)
     const bom = await this.findBOMByProductAndVersion(request.productId, request.version);
+    console.log('🚀 bom:', bom);
     if (!bom) {
       return this.createEmptyResponse(product);
     }
 
     // 4. BOM 아이템들을 트리 구조로 변환
-    const bomItems = bom.getBOMItems();
+    // BOM에서 직접 가져오는 대신 BOMItemRepository를 통해 조회
+    const bomItems = await this.bomItemRepository.findByBOMId(bom.getId());
     const filteredItems = this.filterItems(bomItems, request);
+    console.log('🚀 filteredItems:', filteredItems);
     const treeNodes = await this.buildTreeStructure(filteredItems, request.expandAll || false);
 
     // 5. 통계 정보 계산

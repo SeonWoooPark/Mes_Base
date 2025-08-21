@@ -126,7 +126,16 @@ export class HttpBOMItemRepository implements BOMItemRepository {
         throw new Error('Failed to fetch BOM items by BOM ID');
       }
       
-      return response.data.map(dto => this.mapDtoToEntity(dto));
+      // 데이터 검증 및 필터링
+      const validItems = response.data.filter(dto => {
+        if (!dto.id) {
+          console.warn('Skipping BOM item without ID:', dto);
+          return false;
+        }
+        return true;
+      });
+      
+      return validItems.map(dto => this.mapDtoToEntity(dto));
     } catch (error) {
       console.error('Failed to find BOM items by BOM id:', error);
       return [];
@@ -609,6 +618,12 @@ export class HttpBOMItemRepository implements BOMItemRepository {
   // === Private 변환 메서드들 ===
 
   private mapDtoToEntity(dto: BOMItemDto): BOMItem {
+    // id가 없는 경우 에러 처리
+    if (!dto.id) {
+      console.error('BOM Item DTO missing id:', dto);
+      throw new Error('BOM Item ID is required');
+    }
+    
     const bomItemId = new BOMItemId(dto.id);
     const bomId = new BOMId(dto.bomId);
     const componentId = new ProductId(dto.componentId);
