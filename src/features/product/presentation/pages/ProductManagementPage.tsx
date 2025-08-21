@@ -30,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProductListItem } from '../../application/usecases/product/GetProductListUseCase';
 import { useProductList } from '../hooks/useProductList';
 import { useProductHistory } from '../hooks/useProductHistory';
+import { useAppStoreSelectors } from '@shared/stores/appStore';
 import { ProductTable } from '../components/product/ProductTable';
 import { ProductSearchFilter } from '../components/product/ProductSearchFilter';
 import { ProductFormModal } from '../components/ProductFormModal';
@@ -58,12 +59,14 @@ export const ProductManagementPage: React.FC = () => {
     refresh,               // 데이터 새로고침
   } = useProductList();
 
+  // 현재 pageSize를 Zustand 스토어에서 가져오기
+  const productView = useAppStoreSelectors.useProductView();
+
   // === 로컬 상태 관리 ===
   const [selectedProduct, setSelectedProduct] = useState<ProductListItem | undefined>(); // 선택된 제품 (수정용)
   const [selectedProductForHistory, setSelectedProductForHistory] = useState<ProductListItem | undefined>(); // 이력 조회용 선택된 제품
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);                          // 폼 모달 열림 상태
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);                   // 이력 모달 열림 상태
-  const [pageSize, setPageSizeState] = useState(10);                                     // 페이지당 표시 개수
 
   // BOM 관련 훅들은 BOMManagementPage로 이동됨
 
@@ -143,7 +146,6 @@ export const ProductManagementPage: React.FC = () => {
    * @param newPageSize 새로운 페이지 크기
    */
   const handlePageSizeChange = (newPageSize: number) => {
-    setPageSizeState(newPageSize);
     setPageSize(newPageSize);
   };
 
@@ -179,6 +181,11 @@ export const ProductManagementPage: React.FC = () => {
         <ProductSearchFilter
           onSearch={setSearchKeyword}
           onFilter={setFilters}
+          onProductSelect={(product) => {
+            // 자동완성에서 제품 선택 시 해당 제품으로 필터링
+            console.log('Selected product from autocomplete:', product);
+            // 필요시 추가 로직 구현 (예: 해당 제품으로 스크롤, 하이라이팅 등)
+          }}
         />
 
         {/* 오류 메시지 표시 */}
@@ -204,7 +211,7 @@ export const ProductManagementPage: React.FC = () => {
           <Flex gap={8} align="center">
             <span style={{ fontSize: '14px' }}>페이지당</span>
             <Select
-              value={pageSize}
+              value={productView.pageSize}
               onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
               style={{ width: '80px' }}
             >
@@ -233,7 +240,7 @@ export const ProductManagementPage: React.FC = () => {
           currentPage={currentPage}
           totalPages={totalPages}
           totalCount={totalCount}
-          pageSize={pageSize}
+          pageSize={productView.pageSize}
           onPageChange={setPage}
         />
       </Card>

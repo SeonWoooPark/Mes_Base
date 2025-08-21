@@ -5,6 +5,7 @@ import { UpdateProductRequest } from '../../application/usecases/product/UpdateP
 import { ProductType } from '../../domain/entities/Product';
 import { Modal, ModalContent, FormGroup, Input, Select, Button, Flex } from '@shared/utils/styled';
 import { DIContainer } from '@app/config/DIContainer';
+import { useCreateProduct, useUpdateProduct } from '../hooks/useProductList';
 
 interface ProductFormModalProps {
   isOpen: boolean;

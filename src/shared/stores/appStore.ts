@@ -302,13 +302,18 @@ export const useAppStore = create<AppState & AppActions>()(
           }),
 
           setSearchKeyword: (keyword) => set(state => {
+            console.log('🏦 AppStore: Setting search keyword', {
+              old: state.product.filters.searchKeyword,
+              new: keyword,
+              timestamp: new Date().toISOString()
+            });
             state.product.filters.searchKeyword = keyword;
-            state.product.view.currentPage = 1; // 검색 시 첫 페이지로 이동
+            // 페이지 초기화는 useProductList에서 처리하도록 수정
           }),
 
           setFilters: (filters) => set(state => {
             state.product.filters.activeFilters = filters;
-            state.product.view.currentPage = 1;
+            // 페이지 초기화는 useProductList에서 처리하도록 수정
           }),
 
           setView: (view) => set(state => {

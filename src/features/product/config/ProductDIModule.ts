@@ -119,14 +119,14 @@ export class ProductDIModule {
     //   diContainer.registerSingleton(PRODUCT_TOKENS.ProductRepository, MockProductRepository);
     //   diContainer.registerSingleton(PRODUCT_TOKENS.ProductHistoryRepository, MockProductHistoryRepository);
     // } else {
-    diContainer.register(PRODUCT_TOKENS.ProductRepository, {
-      useFactory: (c) =>
-        new HttpProductRepository(c.resolve(PRODUCT_TOKENS.ApiClient)),
-    });
-    diContainer.register(PRODUCT_TOKENS.ProductHistoryRepository, {
-      useFactory: (c) =>
-        new HttpProductHistoryRepository(c.resolve(PRODUCT_TOKENS.ApiClient)),
-    });
+      diContainer.register(PRODUCT_TOKENS.ProductRepository, {
+        useFactory: (c) =>
+          new HttpProductRepository(c.resolve(PRODUCT_TOKENS.ApiClient)),
+      });
+      diContainer.register(PRODUCT_TOKENS.ProductHistoryRepository, {
+        useFactory: (c) =>
+          new HttpProductHistoryRepository(c.resolve(PRODUCT_TOKENS.ApiClient)),
+      });
     // }
 
     // === Domain Service 설정 ===

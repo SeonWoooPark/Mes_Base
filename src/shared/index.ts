@@ -5,8 +5,6 @@ export { AppLayout } from './components/layout/AppLayout';
 export { Navigation } from './components/navigation/Navigation';
 export { useAuth } from './hooks/useAuth';
 export { useDataSync } from './hooks/useDataSync';
-export { useInfiniteScroll } from './hooks/useInfiniteScroll';
-export { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 export { ApiClient } from './services/api/ApiClient';
 export * from './utils/lazyLoading';
 export * from './utils/performance';

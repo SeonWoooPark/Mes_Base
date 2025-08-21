@@ -20,16 +20,41 @@ export class MockProductRepository implements ProductRepository {
     await this.simulateDelay(300);
 
     let products = MockData.getProducts();
+    const initialCount = products.length;
 
     // 검색 키워드 필터링
     if (criteria.searchKeyword) {
       const keyword = criteria.searchKeyword.toLowerCase();
-      products = products.filter(product =>
-        product.getCdMaterial().toLowerCase().includes(keyword) ||
-        product.getNmMaterial().toLowerCase().includes(keyword) ||
-        product.getCategory().name.toLowerCase().includes(keyword) ||
-        product.getUnit().name.toLowerCase().includes(keyword)
-      );
+      console.log('🔍 MockProductRepository: Filtering with keyword', {
+        keyword,
+        initialProductCount: initialCount
+      });
+      
+      products = products.filter(product => {
+        const matches = product.getCdMaterial().toLowerCase().includes(keyword) ||
+                       product.getNmMaterial().toLowerCase().includes(keyword) ||
+                       product.getCategory().name.toLowerCase().includes(keyword) ||
+                       product.getUnit().name.toLowerCase().includes(keyword);
+        
+        if (matches) {
+          console.log('✅ Match found:', {
+            code: product.getCdMaterial(),
+            name: product.getNmMaterial(),
+            keyword
+          });
+        }
+        return matches;
+      });
+      
+      console.log('🎯 MockProductRepository: Search result', {
+        keyword,
+        filteredCount: products.length,
+        originalCount: initialCount
+      });
+    } else {
+      console.log('🔍 MockProductRepository: No search keyword, returning all products', {
+        totalCount: initialCount
+      });
     }
 
     // 필터 적용

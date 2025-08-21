@@ -20,7 +20,10 @@
       "mcp__smithery-notion__append-block-children",
       "mcp__browserbase__browserbase_session_create",
       "mcp__playwright__browser_navigate",
-      "mcp__playwright__browser_click"
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_press_key",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "defaultMode": "acceptEdits"
   },
@@ -32,5 +35,5 @@
     "filesystem",
     "DeepGraph TypeScript MCP"
   ],
-  "outputStyle": "Learning"
+  "outputStyle": "default"
 }

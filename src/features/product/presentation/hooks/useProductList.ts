@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { GetProductListRequest, GetProductListResponse, ProductListItem } from '../../application/usecases/product/GetProductListUseCase';
 import { ProductFilter } from '../../domain/repositories/ProductRepository';
 import { ProductDI } from '../../config/ProductDIModule';
-import { useFeatureQuery, useFeatureMutation, createFeatureQueryHooks } from '@shared/hooks/useFeatureQuery';
+import { useFeatureMutation, createFeatureQueryHooks } from '@shared/hooks/useFeatureQuery';
 import { useAppStore, useAppStoreSelectors } from '@shared/stores/appStore';
 import { createQueryKey } from '@app/providers/QueryProvider';
 
@@ -34,32 +35,78 @@ export const useProductList = () => {
   const getProductListUseCase = ProductDI.getProductListUseCase();
 
   // 현재 요청 구성 (useMemo로 최적화)
-  const currentRequest: GetProductListRequest = useMemo(() => ({
-    page: productView.currentPage,
-    pageSize: productView.pageSize,
-    sortBy: productView.sortBy,
-    sortDirection: productView.sortDirection,
-    searchKeyword: productFilters.searchKeyword || undefined,
-    filters: [], // TODO: ProductFilter 타입 매핑
-  }), [
+  const currentRequest: GetProductListRequest = useMemo(() => {
+    // activeFilters 배열을 ProductFilter 객체로 변환
+    const mappedFilters: ProductFilter[] = productFilters.activeFilters.map(filterString => {
+      const [field, value] = filterString.split(':');
+      
+      // 문자열 값을 적절한 타입으로 변환
+      let parsedValue: any = value;
+      if (value === 'true') parsedValue = true;
+      else if (value === 'false') parsedValue = false;
+      else if (!isNaN(Number(value))) parsedValue = Number(value);
+      
+      return {
+        field: field as 'type' | 'category' | 'unit' | 'isActive',
+        value: parsedValue
+      };
+    });
+
+    const request = {
+      page: productView.currentPage,
+      pageSize: productView.pageSize,
+      sortBy: productView.sortBy,
+      sortDirection: productView.sortDirection,
+      searchKeyword: productFilters.searchKeyword || undefined,
+      filters: mappedFilters,
+    };
+    
+    // 디버깅: 검색 요청 추적
+    console.log('🔍 Product Search Request:', {
+      searchKeyword: request.searchKeyword,
+      page: request.page,
+      filters: request.filters,
+      timestamp: new Date().toISOString()
+    });
+    
+    return request;
+  }, [
     productView.currentPage,
     productView.pageSize,
     productView.sortBy,
     productView.sortDirection,
     productFilters.searchKeyword,
+    productFilters.activeFilters, // activeFilters 의존성 추가
   ]);
 
-  // TanStack Query를 통한 제품 목록 조회
-  const productListQuery = useFeatureQuery<GetProductListResponse>({
-    feature: 'product',
-    operation: 'list',
-    params: currentRequest,
-    queryFn: () => getProductListUseCase.execute(currentRequest),
-    staleTime: 1000 * 60 * 2, // 2분간 fresh
-    gcTime: 1000 * 60 * 10,   // 10분간 캐시 유지
-    onError: (error) => {
-      console.error('Product list query error:', error);
+  // TanStack Query를 직접 사용하여 쿼리 키 강제 갱신
+  const productListQuery = useQuery<GetProductListResponse>({
+    // 검색어와 필터를 쿼리 키에 명시적으로 포함
+    queryKey: [
+      'product', 
+      'list', 
+      productFilters.searchKeyword || '', // 검색어 명시적 포함
+      productView.currentPage,
+      productView.pageSize,
+      productView.sortBy,
+      productView.sortDirection,
+      productFilters.activeFilters, // 필터 배열 명시적 포함
+    ],
+    queryFn: async () => {
+      console.log('🚀 Executing ProductList Query with params:', currentRequest);
+      const result = await getProductListUseCase.execute(currentRequest);
+      console.log('✅ ProductList Query Result:', {
+        totalCount: result.totalCount,
+        currentPage: result.currentPage,
+        productsLength: result.products.length,
+        searchKeyword: currentRequest.searchKeyword
+      });
+      return result;
     },
+    staleTime: 1000 * 30, // 30초간 fresh 상태 유지
+    gcTime: 1000 * 60 * 5,   // 5분간 캐시 유지
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   // 편의 메서드들
@@ -76,13 +123,17 @@ export const useProductList = () => {
 
   const setSearchKeyword = useCallback((keyword: string) => {
     setSearchKeywordAction(keyword);
-  }, [setSearchKeywordAction]);
+    // 검색어 변경 시 첫 페이지로 이동 (중요!)
+    setViewAction({ currentPage: 1 });
+  }, [setSearchKeywordAction, setViewAction]);
 
   const setFilters = useCallback((filters: ProductFilter[]) => {
     // ProductFilter[]를 string[] 형태로 변환하여 저장 (호환성을 위해)
     const filterStrings = filters.map(f => `${f.field}:${String(f.value)}`);
     setFiltersAction(filterStrings);
-  }, [setFiltersAction]);
+    // 필터 변경 시 첫 페이지로 이동
+    setViewAction({ currentPage: 1 });
+  }, [setFiltersAction, setViewAction]);
 
   const setSortBy = useCallback((sortBy: string, direction: 'asc' | 'desc') => {
     setViewAction({ sortBy, sortDirection: direction });

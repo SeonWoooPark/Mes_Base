@@ -1,6 +1,16 @@
-import { Product, ProductId, ProductType, Category, Unit, AdditionalInfo } from '../../domain/entities/Product';
-import { ProductRepository, ProductSearchCriteria } from '../../domain/repositories/ProductRepository';
-import { ApiClient } from '@shared/services/api/ApiClient';
+import {
+  Product,
+  ProductId,
+  ProductType,
+  Category,
+  Unit,
+  AdditionalInfo,
+} from "../../domain/entities/Product";
+import {
+  ProductRepository,
+  ProductSearchCriteria,
+} from "../../domain/repositories/ProductRepository";
+import { ApiClient } from "@shared/services/api/ApiClient";
 
 interface ProductDto {
   id: string;
@@ -43,10 +53,12 @@ export class HttpProductRepository implements ProductRepository {
 
   async findById(id: ProductId): Promise<Product | null> {
     try {
-      const response = await this.apiClient.get<ProductDto>(`/api/products/${id.getValue()}`);
+      const response = await this.apiClient.get<ProductDto>(
+        `/api/products/${id.getValue()}`
+      );
       return response.success ? this.mapDtoToEntity(response.data) : null;
     } catch (error) {
-      console.error('Failed to find product by id:', error);
+      console.error("Failed to find product by id:", error);
       return null;
     }
   }
@@ -65,24 +77,29 @@ export class HttpProductRepository implements ProductRepository {
       });
 
       if (criteria.searchKeyword) {
-        params.append('search', criteria.searchKeyword);
+        params.append("searchKeyword", criteria.searchKeyword);
       }
 
       criteria.filters.forEach((filter, index) => {
-        params.append(`filters[${index}].field`, filter.field);
-        params.append(`filters[${index}].value`, filter.value.toString());
+        if (filter.field === "type") {
+          params.append("type", filter.value);
+        } else if (filter.field === "isActive") {
+          params.append("isActive", filter.value);
+        }
       });
 
-      const response = await this.apiClient.get<PagedResponse<ProductDto>>(`/api/products?${params}`);
-      
+      const response = await this.apiClient.get<PagedResponse<ProductDto>>(
+        `/api/products?${params}`
+      );
+
       if (!response.success) {
-        throw new Error(response.message || 'Failed to fetch products');
+        throw new Error(response.message || "Failed to fetch products");
       }
 
       return response.data.data.map((dto) => this.mapDtoToEntity(dto));
     } catch (error) {
-      console.error('Error fetching products:', error);
-      throw new Error('Failed to fetch products from server');
+      console.error("Error fetching products:", error);
+      throw new Error("Failed to fetch products from server");
     }
   }
 
@@ -94,24 +111,29 @@ export class HttpProductRepository implements ProductRepository {
       });
 
       if (criteria.searchKeyword) {
-        params.append('search', criteria.searchKeyword);
+        params.append("searchKeyword", criteria.searchKeyword);
       }
 
       criteria.filters.forEach((filter, index) => {
-        params.append(`filters[${index}].field`, filter.field);
-        params.append(`filters[${index}].value`, filter.value.toString());
+        if (filter.field === "type") {
+          params.append("type", filter.value);
+        } else if (filter.field === "isActive") {
+          params.append("isActive", filter.value);
+        }
       });
 
-      const response = await this.apiClient.get<ProductDto[]>(`/api/products/all?${params}`);
-      
+      const response = await this.apiClient.get<ProductDto[]>(
+        `/api/products/all?${params}`
+      );
+
       if (!response.success) {
-        throw new Error(response.message || 'Failed to fetch all products');
+        throw new Error(response.message || "Failed to fetch all products");
       }
 
       return response.data.map((dto) => this.mapDtoToEntity(dto));
     } catch (error) {
-      console.error('Error fetching all products:', error);
-      throw new Error('Failed to fetch all products from server');
+      console.error("Error fetching all products:", error);
+      throw new Error("Failed to fetch all products from server");
     }
   }
 
@@ -120,67 +142,76 @@ export class HttpProductRepository implements ProductRepository {
       const params = new URLSearchParams();
 
       if (criteria.searchKeyword) {
-        params.append('search', criteria.searchKeyword);
+        params.append("searchKeyword", criteria.searchKeyword);
       }
 
       criteria.filters.forEach((filter, index) => {
-        params.append(`filters[${index}].field`, filter.field);
-        params.append(`filters[${index}].value`, filter.value.toString());
+        if (filter.field === "type") {
+          params.append("type", filter.value);
+        } else if (filter.field === "isActive") {
+          params.append("isActive", filter.value);
+        }
       });
 
-      const response = await this.apiClient.get<{ count: number }>(`/api/products/count?${params}`);
-      
+      const response = await this.apiClient.get<{ totalCount: number }>(
+        `/api/products/count?${params}`
+      );
+
       if (!response.success) {
-        throw new Error(response.message || 'Failed to count products');
+        throw new Error(response.message || "Failed to count products");
       }
 
-      return response.data.count;
+      return response.data.totalCount;
     } catch (error) {
-      console.error('Error counting products:', error);
-      throw new Error('Failed to count products from server');
+      console.error("Error counting products:", error);
+      throw new Error("Failed to count products from server");
     }
   }
 
   async getLastSequenceByPrefix(prefix: string): Promise<number> {
     try {
-      const response = await this.apiClient.get<{ sequence: number }>(`/api/products/next-sequence/${prefix}`);
-      
+      const response = await this.apiClient.get<{ sequence: number }>(
+        `/api/products/next-sequence/${prefix}`
+      );
+
       if (!response.success) {
-        throw new Error(response.message || 'Failed to get last sequence');
+        throw new Error(response.message || "Failed to get last sequence");
       }
 
       return response.data.sequence;
     } catch (error) {
-      console.error('Error getting sequence:', error);
-      throw new Error('Failed to get sequence from server');
+      console.error("Error getting sequence:", error);
+      throw new Error("Failed to get sequence from server");
     }
   }
 
   async save(product: Product): Promise<void> {
     try {
       const dto = this.mapEntityToDto(product);
-      
-      const response = await this.apiClient.post('/api/products', dto);
-      
+
+      const response = await this.apiClient.post("/api/products", dto);
+
       if (!response.success) {
-        throw new Error(response.message || 'Failed to save product');
+        throw new Error(response.message || "Failed to save product");
       }
     } catch (error) {
-      console.error('Error saving product:', error);
-      throw new Error('Failed to save product to server');
+      console.error("Error saving product:", error);
+      throw new Error("Failed to save product to server");
     }
   }
 
   async delete(id: ProductId): Promise<void> {
     try {
-      const response = await this.apiClient.delete(`/api/products/${id.getValue()}`);
-      
+      const response = await this.apiClient.delete(
+        `/api/products/${id.getValue()}`
+      );
+
       if (!response.success) {
-        throw new Error(response.message || 'Failed to delete product');
+        throw new Error(response.message || "Failed to delete product");
       }
     } catch (error) {
-      console.error('Error deleting product:', error);
-      throw new Error('Failed to delete product from server');
+      console.error("Error deleting product:", error);
+      throw new Error("Failed to delete product from server");
     }
   }
 
@@ -204,8 +235,8 @@ export class HttpProductRepository implements ProductRepository {
       dto.safetyStock,
       dto.isActive,
       additionalInfo,
-      dto.id_create || 'system',
-      dto.id_updated || 'system',
+      dto.id_create || "system",
+      dto.id_updated || "system",
       dto.dt_create ? new Date(dto.dt_create) : new Date(dto.lastUpdated),
       dto.dt_update ? new Date(dto.dt_update) : new Date(dto.lastUpdated)
     );
@@ -214,10 +245,14 @@ export class HttpProductRepository implements ProductRepository {
   private mapEntityToDto(product: Product): ProductDto {
     const getTypeDisplayName = (type: ProductType): string => {
       switch (type) {
-        case ProductType.FINISHED_PRODUCT: return '완제품';
-        case ProductType.SEMI_FINISHED: return '반제품';
-        case ProductType.RAW_MATERIAL: return '원자재';
-        default: return '기타';
+        case ProductType.FINISHED_PRODUCT:
+          return "완제품";
+        case ProductType.SEMI_FINISHED:
+          return "반제품";
+        case ProductType.RAW_MATERIAL:
+          return "원자재";
+        default:
+          return "기타";
       }
     };
 
@@ -238,11 +273,16 @@ export class HttpProductRepository implements ProductRepository {
       safetyStock: product.getSafetyStock(),
       isActive: product.getIsActive(),
       lastUpdated: product.getDtUpdate().toISOString(),
-      additionalInfo: product.getAdditionalInfo().description || product.getAdditionalInfo().specifications || product.getAdditionalInfo().notes ? {
-        description: product.getAdditionalInfo().description,
-        specifications: product.getAdditionalInfo().specifications,
-        notes: product.getAdditionalInfo().notes,
-      } : undefined,
+      additionalInfo:
+        product.getAdditionalInfo().description ||
+        product.getAdditionalInfo().specifications ||
+        product.getAdditionalInfo().notes
+          ? {
+              description: product.getAdditionalInfo().description,
+              specifications: product.getAdditionalInfo().specifications,
+              notes: product.getAdditionalInfo().notes,
+            }
+          : undefined,
       id_create: product.getIdCreate(),
       id_updated: product.getIdUpdated(),
       dt_create: product.getDtCreate().toISOString(),

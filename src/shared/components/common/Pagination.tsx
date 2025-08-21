@@ -17,35 +17,45 @@ export const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
 }) => {
   const getPageNumbers = (): number[] => {
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
-
-    for (
-      let i = Math.max(2, currentPage - delta);
-      i <= Math.min(totalPages - 1, currentPage + delta);
-      i++
-    ) {
-      range.push(i);
+    const pages: number[] = [];
+    const showDots = -1;
+    
+    // 총 페이지가 7개 이하면 모든 페이지를 표시
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+      return pages;
     }
 
-    if (currentPage - delta > 2) {
-      rangeWithDots.push(1, -1);
-    } else {
-      rangeWithDots.push(1);
+    // 현재 페이지가 처음 4페이지 내에 있을 때
+    if (currentPage <= 4) {
+      for (let i = 1; i <= 5; i++) {
+        pages.push(i);
+      }
+      pages.push(showDots);
+      pages.push(totalPages);
     }
-
-    rangeWithDots.push(...range);
-
-    if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push(-2, totalPages);
-    } else {
-      if (totalPages > 1) {
-        rangeWithDots.push(totalPages);
+    // 현재 페이지가 마지막 4페이지 내에 있을 때
+    else if (currentPage >= totalPages - 3) {
+      pages.push(1);
+      pages.push(showDots);
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pages.push(i);
       }
     }
+    // 현재 페이지가 중간에 있을 때
+    else {
+      pages.push(1);
+      pages.push(showDots);
+      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+        pages.push(i);
+      }
+      pages.push(showDots);
+      pages.push(totalPages);
+    }
 
-    return rangeWithDots;
+    return pages;
   };
 
   const startItem = (currentPage - 1) * pageSize + 1;
@@ -78,7 +88,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       </button>
 
       {getPageNumbers().map((page, index) => {
-        if (page === -1 || page === -2) {
+        if (page === -1) {
           return <span key={`dots-${index}`}>...</span>;
         }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDebounce } from './useDebounce';
 import { ProductListItem } from '@features/product/application/usecases/product/GetProductListUseCase';
 import { useProductList } from '@features/product/presentation/hooks/useProductList';
@@ -125,7 +125,12 @@ export const useProductSearch = (
   const debouncedSearchTerm = useDebounce(searchTerm, opts.debounceDelay);
   
   // === 제품 데이터 ===
-  const { products: allProducts, loading: productsLoading } = useProductList();
+  const { products: allProducts, loading: productsLoading, setSearchKeyword } = useProductList();
+  
+  // === 검색어 동기화 ===
+  useEffect(() => {
+    setSearchKeyword(debouncedSearchTerm || '');
+  }, [debouncedSearchTerm, setSearchKeyword]);
   
   // === 검색 로직 ===
   const searchResult = useMemo((): ProductSearchResult => {
