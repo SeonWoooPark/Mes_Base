@@ -13,7 +13,7 @@ export interface ProductHistoryItem {
     fieldName: string;
     oldValue: any;
     newValue: any;
-  }[];
+  };
   userId: string;
   userName: string;
   timestamp: Date;
@@ -37,11 +37,11 @@ export class GetProductHistoryUseCase {
       id: history.getId(),
       action: history.getAction(),
       actionName: this.getActionDisplayName(history.getAction()),
-      changedFields: history.getChangedFields().map(field => ({
-        fieldName: field.fieldName,
-        oldValue: field.oldValue,
-        newValue: field.newValue
-      })),
+      changedFields: {
+        fieldName: history.getChangedFields().fieldName,
+        oldValue: history.getChangedFields().oldValue,
+        newValue: history.getChangedFields().newValue
+      },
       userId: history.getUserId(),
       userName: history.getUserName(),
       timestamp: history.getTimestamp(),

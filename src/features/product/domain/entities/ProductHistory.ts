@@ -8,12 +8,10 @@ export enum HistoryAction {
   DEACTIVATE = 'DEACTIVATE'
 }
 
-export class ChangedField {
-  constructor(
-    public readonly fieldName: string,
-    public readonly oldValue: any,
-    public readonly newValue: any
-  ) {}
+export interface ChangedField {
+  readonly fieldName: string;
+  readonly oldValue: any;
+  readonly newValue: any;
 }
 
 export class ProductHistory {
@@ -21,7 +19,7 @@ export class ProductHistory {
     private readonly id: string,
     private readonly productId: ProductId,
     private readonly action: HistoryAction,
-    private readonly changedFields: ChangedField[],
+    private readonly changedFields: ChangedField,
     private readonly userId: string,
     private readonly userName: string,
     private readonly timestamp: Date,
@@ -31,7 +29,7 @@ export class ProductHistory {
   public getId(): string { return this.id; }
   public getProductId(): ProductId { return this.productId; }
   public getAction(): HistoryAction { return this.action; }
-  public getChangedFields(): ChangedField[] { return this.changedFields; }
+  public getChangedFields(): ChangedField { return this.changedFields; }
   public getUserId(): string { return this.userId; }
   public getUserName(): string { return this.userName; }
   public getTimestamp(): Date { return this.timestamp; }

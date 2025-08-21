@@ -77,7 +77,11 @@ export class CreateProductUseCase {
       uuidv4(),
       productId,
       HistoryAction.CREATE,
-      [],
+      {
+        fieldName: 'product_created',
+        oldValue: null,
+        newValue: product.getCdMaterial()
+      },
       request.id_create,
       request.id_create,
       new Date(),

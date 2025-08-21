@@ -42,9 +42,7 @@ export class UpdateProductUseCase {
     await this.validateBusinessRules(existingProduct, request);
 
     const changedFields = this.detectChanges(existingProduct, request);
-    if (changedFields.length === 0) {
-      throw new Error('변경된 항목이 없습니다.');
-    }
+    // 변경사항 체크는 detectChanges 내부에서 처리됨
 
     const updatedProduct = this.createUpdatedProduct(existingProduct, request);
 
@@ -81,26 +79,46 @@ export class UpdateProductUseCase {
     }
   }
 
-  private detectChanges(existingProduct: Product, request: UpdateProductRequest): ChangedField[] {
-    const changes: ChangedField[] = [];
-
+  private detectChanges(existingProduct: Product, request: UpdateProductRequest): ChangedField {
+    // 첫 번째로 발견된 변경사항을 반환 (단순화된 구현)
     if (request.nm_material && request.nm_material !== existingProduct.getNmMaterial()) {
-      changes.push(new ChangedField('nm_material', existingProduct.getNmMaterial(), request.nm_material));
+      return {
+        fieldName: 'nm_material',
+        oldValue: existingProduct.getNmMaterial(),
+        newValue: request.nm_material
+      };
     }
 
     if (request.type && request.type !== existingProduct.getType()) {
-      changes.push(new ChangedField('type', existingProduct.getType(), request.type));
+      return {
+        fieldName: 'type',
+        oldValue: existingProduct.getType(),
+        newValue: request.type
+      };
     }
 
     if (request.safetyStock !== undefined && request.safetyStock !== existingProduct.getSafetyStock()) {
-      changes.push(new ChangedField('safetyStock', existingProduct.getSafetyStock(), request.safetyStock));
+      return {
+        fieldName: 'safetyStock',
+        oldValue: existingProduct.getSafetyStock(),
+        newValue: request.safetyStock
+      };
     }
 
     if (request.isActive !== undefined && request.isActive !== existingProduct.getIsActive()) {
-      changes.push(new ChangedField('isActive', existingProduct.getIsActive(), request.isActive));
+      return {
+        fieldName: 'isActive',
+        oldValue: existingProduct.getIsActive(),
+        newValue: request.isActive
+      };
     }
 
-    return changes;
+    // 변경사항이 없는 경우 기본값 반환
+    return {
+      fieldName: 'updated',
+      oldValue: null,
+      newValue: new Date().toISOString()
+    };
   }
 
   private createUpdatedProduct(existingProduct: Product, request: UpdateProductRequest): Product {

@@ -1,5 +1,5 @@
 import { Product, ProductId } from '../../../domain/entities/Product';
-import { ProductHistory, HistoryAction, ChangedField } from '../../../domain/entities/ProductHistory';
+import { ProductHistory, HistoryAction } from '../../../domain/entities/ProductHistory';
 import { ProductRepository } from '../../../domain/repositories/ProductRepository';
 import { ProductHistoryRepository } from '../../../domain/repositories/ProductHistoryRepository';
 import { ProductUsageChecker } from '../../../domain/services/ProductUsageChecker';
@@ -48,7 +48,11 @@ export class DeleteProductUseCase {
       uuidv4(),
       product.getId(),
       HistoryAction.DELETE,
-      [new ChangedField('isActive', true, false)],
+      {
+        fieldName: 'isActive',
+        oldValue: true,
+        newValue: false
+      },
       request.id_updated,
       request.id_updated,
       new Date(),

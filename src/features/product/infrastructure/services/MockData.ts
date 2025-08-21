@@ -14,7 +14,7 @@
  */
 
 import { Product, ProductId, ProductType, Category, Unit, AdditionalInfo } from '../../domain/entities/Product';
-import { ProductHistory, HistoryAction, ChangedField } from '../../domain/entities/ProductHistory';
+import { ProductHistory, HistoryAction } from '../../domain/entities/ProductHistory';
 
 // 메모리 내 데이터 저장소
 let products: Product[] = [];
@@ -207,7 +207,11 @@ function initializeHistories(): void {
         id: 'hist-001',
         productId: 'prod-001',
         action: HistoryAction.CREATE,
-        changedFields: [],
+        changedFields: {
+          fieldName: 'product_created',
+          oldValue: null,
+          newValue: 'CASE001'
+        },
         userId: 'admin',
         userName: '관리자',
         timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -217,10 +221,11 @@ function initializeHistories(): void {
         id: 'hist-002',
         productId: 'prod-001',
         action: HistoryAction.UPDATE,
-        changedFields: [
-          new ChangedField('safetyStock', 80, 100),
-          new ChangedField('nm_material', '삼성 갤럭시 케이스', '삼성 갤럭시 S24 케이스')
-        ],
+        changedFields: {
+          fieldName: 'safetyStock',
+          oldValue: 80,
+          newValue: 100
+        },
         userId: 'admin',
         userName: '관리자',
         timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -230,7 +235,11 @@ function initializeHistories(): void {
         id: 'hist-003',
         productId: 'prod-007',
         action: HistoryAction.DEACTIVATE,
-        changedFields: [new ChangedField('isActive', true, false)],
+        changedFields: {
+          fieldName: 'isActive',
+          oldValue: true,
+          newValue: false
+        },
         userId: 'manager',
         userName: '매니저',
         timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),

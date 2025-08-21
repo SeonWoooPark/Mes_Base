@@ -56,11 +56,9 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
       filtered = filtered.filter(history => 
         history.userName.toLowerCase().includes(keyword) ||
         history.reason?.toLowerCase().includes(keyword) ||
-        history.changedFields.some((field: any) => 
-          field.fieldName.toLowerCase().includes(keyword) ||
-          String(field.oldValue || '').toLowerCase().includes(keyword) ||
-          String(field.newValue || '').toLowerCase().includes(keyword)
-        )
+        history.changedFields.fieldName.toLowerCase().includes(keyword) ||
+        String(history.changedFields.oldValue || '').toLowerCase().includes(keyword) ||
+        String(history.changedFields.newValue || '').toLowerCase().includes(keyword)
       );
     }
 
@@ -258,7 +256,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
 
                 {/* 변경 필드 목록 */}
                 <div style={{ padding: '16px' }}>
-                  {history.changedFields.length === 0 ? (
+                  {!history.changedFields.fieldName ? (
                     <div style={{ 
                       textAlign: 'center', 
                       color: '#666', 
@@ -277,27 +275,25 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {history.changedFields.map((field: any, fieldIndex: number) => (
-                          <tr key={fieldIndex}>
-                            <td style={{ fontWeight: 'bold', fontSize: '12px' }}>
-                              {getFieldDisplayName(field.fieldName)}
-                            </td>
-                            <td style={{ 
-                              fontSize: '12px',
-                              color: '#666',
-                              textDecoration: 'line-through'
-                            }}>
-                              {formatFieldValue(field.oldValue)}
-                            </td>
-                            <td style={{ 
-                              fontSize: '12px',
-                              color: '#28a745',
-                              fontWeight: 'bold'
-                            }}>
-                              {formatFieldValue(field.newValue)}
-                            </td>
-                          </tr>
-                        ))}
+                        <tr>
+                          <td style={{ fontWeight: 'bold', fontSize: '12px' }}>
+                            {getFieldDisplayName(history.changedFields.fieldName)}
+                          </td>
+                          <td style={{ 
+                            fontSize: '12px',
+                            color: '#666',
+                            textDecoration: 'line-through'
+                          }}>
+                            {formatFieldValue(history.changedFields.oldValue)}
+                          </td>
+                          <td style={{ 
+                            fontSize: '12px',
+                            color: '#28a745',
+                            fontWeight: 'bold'
+                          }}>
+                            {formatFieldValue(history.changedFields.newValue)}
+                          </td>
+                        </tr>
                       </tbody>
                     </Table>
                   )}
