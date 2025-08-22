@@ -34,10 +34,10 @@ import { useAppStoreSelectors } from '@shared/stores/appStore';
 import { ProductTable } from '../components/product/ProductTable';
 import { ProductSearchFilter } from '../components/product/ProductSearchFilter';
 import { ProductFormModal } from '../components/ProductFormModal';
+import { ProductDeleteModal } from '../components/ProductDeleteModal';
 import { ProductHistoryModal } from '../components/ProductHistoryModal';
 import { Pagination } from '@shared/components/common/Pagination';
 import { Container, Card, Button, Flex, Select } from '@shared/utils/styled';
-import { useDeleteProduct } from '../hooks/useProductList';
 
 export const ProductManagementPage: React.FC = () => {
   // === React Router 네비게이션 ===
@@ -64,8 +64,10 @@ export const ProductManagementPage: React.FC = () => {
 
   // === 로컬 상태 관리 ===
   const [selectedProduct, setSelectedProduct] = useState<ProductListItem | undefined>(); // 선택된 제품 (수정용)
+  const [selectedProductForDelete, setSelectedProductForDelete] = useState<ProductListItem | null>(null); // 삭제용 선택된 제품
   const [selectedProductForHistory, setSelectedProductForHistory] = useState<ProductListItem | undefined>(); // 이력 조회용 선택된 제품
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);                          // 폼 모달 열림 상태
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);                      // 삭제 모달 열림 상태
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);                   // 이력 모달 열림 상태
 
   // BOM 관련 훅들은 BOMManagementPage로 이동됨
@@ -80,8 +82,6 @@ export const ProductManagementPage: React.FC = () => {
     refresh: refreshHistory,
   } = useProductHistory();
 
-  // === 새로운 Hook 시스템 사용 ===
-  const deleteProductMutation = useDeleteProduct();
 
   // === 이벤트 핸들러들 ===
 
@@ -106,20 +106,9 @@ export const ProductManagementPage: React.FC = () => {
    * 제품 삭제 처리
    * @param product 삭제할 제품 정보
    */
-  const handleDeleteProduct = async (product: ProductListItem) => {
-    // 사용자 확인
-    if (!window.confirm(`제품 '${product.nm_material}'을(를) 삭제하시겠습니까?`)) {
-      return;
-    }
-
-    // 새로운 Mutation Hook 사용
-    deleteProductMutation.mutate({
-      productId: product.id,
-      id_updated: 'current-user', // TODO: 실제 로그인된 사용자 ID 사용
-      reason: '사용자 요청에 의한 삭제',
-    });
-    
-    // Note: 성공/에러 처리는 useFeatureMutation에서 자동으로 처리됨
+  const handleDeleteProduct = (product: ProductListItem) => {
+    setSelectedProductForDelete(product);
+    setIsDeleteModalOpen(true);
   };
 
   /**
@@ -166,6 +155,21 @@ export const ProductManagementPage: React.FC = () => {
     setSelectedProductForHistory(undefined);
     clearHistory(); // 이력 데이터 초기화
   }, [clearHistory]);
+
+  /**
+   * 삭제 모달 닫기 처리
+   */
+  const handleDeleteModalClose = useCallback(() => {
+    setIsDeleteModalOpen(false);
+    setSelectedProductForDelete(null);
+  }, []);
+
+  /**
+   * 삭제 성공 처리
+   */
+  const handleDeleteSuccess = useCallback(() => {
+    refresh(); // 목록 새로고침
+  }, [refresh]);
 
   // === 렌더링 ===
   return (
@@ -251,6 +255,14 @@ export const ProductManagementPage: React.FC = () => {
         product={selectedProduct}             // 수정할 제품 (신규 등록 시 undefined)
         onClose={() => setIsFormModalOpen(false)}    // 모달 닫기
         onSuccess={handleFormSuccess}        // 등록/수정 성공 처리
+      />
+
+      {/* 제품 삭제 확인 모달 */}
+      <ProductDeleteModal
+        isOpen={isDeleteModalOpen}
+        product={selectedProductForDelete}
+        onClose={handleDeleteModalClose}
+        onSuccess={handleDeleteSuccess}
       />
 
       {/* BOM 관련 모달들은 BOMManagementPage로 이동됨 */}

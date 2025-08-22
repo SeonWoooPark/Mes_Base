@@ -45,7 +45,11 @@ export class CreateProductUseCase {
 
     const cd_material = await this.productCodeGenerator.generateCode(request.type);
 
-    const productId = new ProductId(uuidv4());
+    // 신규 생성 시 임시 ID 사용 (temp- 접두사로 구분)
+    // 백엔드에서 실제 ID를 생성하므로 프론트엔드에서는 임시 ID 사용
+    const tempId = `temp-${uuidv4()}`;
+    const productId = new ProductId(tempId);
+    
     const category = new Category(request.category.code, request.category.name);
     const unit = new Unit(request.unit.code, request.unit.name);
     const additionalInfo = new AdditionalInfo(
@@ -73,21 +77,21 @@ export class CreateProductUseCase {
 
     await this.productRepository.save(product);
 
-    const history = new ProductHistory(
-      uuidv4(),
-      productId,
-      HistoryAction.CREATE,
-      {
-        fieldName: 'product_created',
-        oldValue: null,
-        newValue: product.getCdMaterial()
-      },
-      request.id_create,
-      request.id_create,
-      new Date(),
-      '신규 제품 등록'
-    );
-    await this.productHistoryRepository.save(history);
+    // const history = new ProductHistory(
+    //   uuidv4(),
+    //   productId,
+    //   HistoryAction.CREATE,
+    //   {
+    //     fieldName: 'product_created',
+    //     oldValue: null,
+    //     newValue: product.getCdMaterial()
+    //   },
+    //   request.id_create,
+    //   request.id_create,
+    //   new Date(),
+    //   '신규 제품 등록'
+    // );
+    // await this.productHistoryRepository.save(history);
 
     return {
       productId: productId.getValue(),

@@ -23,5 +23,5 @@ export interface ProductRepository {
   countByCriteria(criteria: ProductSearchCriteria): Promise<number>;
   getLastSequenceByPrefix(prefix: string): Promise<number>;
   save(product: Product): Promise<void>;
-  delete(id: ProductId): Promise<void>;
+  delete(id: ProductId, deleteData?: { id_updated: string; reason?: string; softDelete?: boolean }): Promise<void>;
 }

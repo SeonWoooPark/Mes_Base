@@ -198,10 +198,6 @@ export const useCreateProduct = () => {
     operation: 'create',
     mutationFn: (variables: any) => createProductUseCase.execute(variables),
     invalidateQueries: [createQueryKey.product.all()],
-    onSuccess: () => {
-      // 성공시 폼 모달 닫기
-      useAppStore.getState().product.closeFormModal();
-    },
   });
 };
 
@@ -220,9 +216,6 @@ export const useUpdateProduct = () => {
       // 특정 제품 상세도 무효화 필요시
       // createQueryKey.product.detail(variables.id)
     ],
-    onSuccess: () => {
-      useAppStore.getState().product.closeFormModal();
-    },
   });
 };
 
@@ -238,7 +231,7 @@ export const useDeleteProduct = () => {
     mutationFn: (variables: { productId: string; id_updated: string; reason: string }) => 
       deleteProductUseCase.execute(variables),
     invalidateQueries: [createQueryKey.product.all()],
-    optimisticUpdate: (variables) => {
+    optimisticUpdate: () => {
       // 낙관적 업데이트: UI에서 즉시 항목 제거
       // TODO: 실제 구현 시 queryClient.setQueryData 활용
     },

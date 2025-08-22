@@ -34,6 +34,7 @@ import { CreateProductUseCase } from "../application/usecases/product/CreateProd
 import { UpdateProductUseCase } from "../application/usecases/product/UpdateProductUseCase";
 import { DeleteProductUseCase } from "../application/usecases/product/DeleteProductUseCase";
 import { GetProductHistoryUseCase } from "../application/usecases/product/GetProductHistoryUseCase";
+import { GetProductDetailUseCase } from "../application/usecases/product/GetProductDetailUseCase";
 
 // Infrastructure Layer
 import { MockProductRepository } from "../infrastructure/repositories/MockProductRepository";
@@ -80,6 +81,7 @@ export const PRODUCT_TOKENS = {
 
   // UseCase Tokens
   GetProductListUseCase: Symbol("GetProductListUseCase"),
+  GetProductDetailUseCase: Symbol("GetProductDetailUseCase"),
   CreateProductUseCase: Symbol("CreateProductUseCase"),
   UpdateProductUseCase: Symbol("UpdateProductUseCase"),
   DeleteProductUseCase: Symbol("DeleteProductUseCase"),
@@ -199,6 +201,14 @@ export class ProductDIModule {
         ),
     });
 
+    // GetProductDetailUseCase
+    diContainer.register(PRODUCT_TOKENS.GetProductDetailUseCase, {
+      useFactory: (c) =>
+        new GetProductDetailUseCase(
+          c.resolve(PRODUCT_TOKENS.ProductRepository)
+        ),
+    });
+
     this.initialized = true;
     console.log("✅ ProductDIModule initialized successfully");
   }
@@ -234,6 +244,9 @@ export class ProductDIModule {
 export const ProductDI = {
   getProductListUseCase: (): GetProductListUseCase =>
     container.resolve(PRODUCT_TOKENS.GetProductListUseCase),
+
+  getProductDetailUseCase: (): GetProductDetailUseCase =>
+    container.resolve(PRODUCT_TOKENS.GetProductDetailUseCase),
 
   createProductUseCase: (): CreateProductUseCase =>
     container.resolve(PRODUCT_TOKENS.CreateProductUseCase),

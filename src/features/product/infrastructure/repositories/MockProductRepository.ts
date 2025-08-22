@@ -188,7 +188,7 @@ export class MockProductRepository implements ProductRepository {
     }
   }
 
-  async delete(id: ProductId): Promise<void> {
+  async delete(id: ProductId, deleteData?: { id_updated: string; reason?: string; softDelete?: boolean }): Promise<void> {
     await this.simulateDelay(150);
     MockData.deleteProduct(id);
   }

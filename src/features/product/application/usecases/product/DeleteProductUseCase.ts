@@ -26,39 +26,31 @@ export class DeleteProductUseCase {
 
     await this.validateDeletion(product);
 
-    const deletedProduct = new Product(
+    // 소프트 삭제를 위해 delete 메서드에 추가 정보 전달
+    await this.productRepository.delete(
       product.getId(),
-      product.getCdMaterial(),
-      product.getNmMaterial(),
-      product.getType(),
-      product.getCategory(),
-      product.getUnit(),
-      product.getSafetyStock(),
-      false, // 비활성화
-      product.getAdditionalInfo(),
-      product.getIdCreate(),
-      request.id_updated,
-      product.getDtCreate(),
-      new Date()
-    );
-
-    await this.productRepository.save(deletedProduct);
-
-    const history = new ProductHistory(
-      uuidv4(),
-      product.getId(),
-      HistoryAction.DELETE,
       {
-        fieldName: 'isActive',
-        oldValue: true,
-        newValue: false
-      },
-      request.id_updated,
-      request.id_updated,
-      new Date(),
-      request.reason || '제품 삭제'
+        id_updated: request.id_updated,
+        reason: request.reason || '제품 삭제',
+        softDelete: true
+      }
     );
-    await this.productHistoryRepository.save(history);
+
+    // const history = new ProductHistory(
+    //   uuidv4(),
+    //   product.getId(),
+    //   HistoryAction.DELETE,
+    //   {
+    //     fieldName: 'isActive',
+    //     oldValue: true,
+    //     newValue: false
+    //   },
+    //   request.id_updated,
+    //   request.id_updated,
+    //   new Date(),
+    //   request.reason || '제품 삭제'
+    // );
+    // await this.productHistoryRepository.save(history);
   }
 
   private async validateDeletion(product: Product): Promise<void> {

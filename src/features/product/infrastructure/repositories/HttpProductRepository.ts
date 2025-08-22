@@ -188,11 +188,46 @@ export class HttpProductRepository implements ProductRepository {
   async save(product: Product): Promise<void> {
     try {
       const dto = this.mapEntityToDto(product);
-
-      const response = await this.apiClient.post("/api/products", dto);
-
-      if (!response.success) {
-        throw new Error(response.message || "Failed to save product");
+      
+      // ID가 있고 'temp-' 접두사가 아니면 수정, 그 외는 신규 생성
+      // 'temp-'로 시작하는 ID는 프론트엔드에서 임시로 생성한 것이므로 신규로 처리
+      const isUpdate = dto.id && !dto.id.startsWith('temp-');
+      
+      if (isUpdate) {
+        // 수정 요청 (PUT) - 백엔드 API 스펙에 맞게 필드 조정
+        const updateRequest = {
+          nm_material: dto.nm_material,
+          type: dto.type,
+          category: dto.category,
+          unit: dto.unit,
+          safetyStock: dto.safetyStock,
+          isActive: dto.isActive,
+          additionalInfo: dto.additionalInfo,
+          id_update: dto.id_updated || 'system',  // id_updated를 id_update로 변경
+          updateReason: '사용자 요청에 의한 수정'
+        };
+        
+        const response = await this.apiClient.put(
+          `/api/products/${dto.id}`,
+          updateRequest
+        );
+        
+        if (!response.success) {
+          throw new Error(response.message || "Failed to update product");
+        }
+      } else {
+        // 생성 요청 (POST) - 신규 생성 시에는 id를 제외하고 전송
+        const createRequest = {
+          ...dto,
+          id: undefined, // 백엔드에서 생성하도록 id 제거
+          cd_material: undefined, // 백엔드에서 자동 생성
+        };
+        
+        const response = await this.apiClient.post("/api/products", createRequest);
+        
+        if (!response.success) {
+          throw new Error(response.message || "Failed to create product");
+        }
       }
     } catch (error) {
       console.error("Error saving product:", error);
@@ -200,10 +235,20 @@ export class HttpProductRepository implements ProductRepository {
     }
   }
 
-  async delete(id: ProductId): Promise<void> {
+  async delete(id: ProductId, deleteData?: { id_updated: string; reason?: string; softDelete?: boolean }): Promise<void> {
     try {
+      // 백엔드 API 필드명에 맞게 변환
+      const requestData = {
+        deleteReason: deleteData?.reason || '사용자 요청에 의한 삭제',
+        id_delete: deleteData?.id_updated || 'system',
+        softDelete: deleteData?.softDelete !== undefined ? deleteData.softDelete : true
+      };
+      
       const response = await this.apiClient.delete(
-        `/api/products/${id.getValue()}`
+        `/api/products/${id.getValue()}`,
+        {
+          data: requestData
+        }
       );
 
       if (!response.success) {

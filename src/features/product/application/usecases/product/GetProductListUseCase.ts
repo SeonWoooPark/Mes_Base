@@ -50,6 +50,11 @@ export interface ProductListItem {
   isActive: boolean;             // 활성화 상태
   statusDisplay: string;         // 상태 표시명
   lastUpdated: Date;             // 최종 수정일시
+  additionalInfo?: {             // 추가 정보
+    description?: string;
+    specifications?: string;
+    notes?: string;
+  };
 }
 
 /**
@@ -113,7 +118,12 @@ export class GetProductListUseCase {
       safetyStock: product.getSafetyStock(),
       isActive: product.getIsActive(),
       statusDisplay: product.getIsActive() ? '사용' : '미사용',
-      lastUpdated: product.getDtUpdate()
+      lastUpdated: product.getDtUpdate(),
+      additionalInfo: {
+        description: product.getAdditionalInfo()?.description,
+        specifications: product.getAdditionalInfo()?.specifications,
+        notes: product.getAdditionalInfo()?.notes
+      }
     }));
 
     // 6. 페이지네이션 정보 계산

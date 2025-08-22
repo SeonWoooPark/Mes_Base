@@ -4,8 +4,9 @@ import { CreateProductRequest } from '../../application/usecases/product/CreateP
 import { UpdateProductRequest } from '../../application/usecases/product/UpdateProductUseCase';
 import { ProductType } from '../../domain/entities/Product';
 import { Modal, ModalContent, FormGroup, Input, Select, Button, Flex } from '@shared/utils/styled';
-import { DIContainer } from '@app/config/DIContainer';
 import { useCreateProduct, useUpdateProduct } from '../hooks/useProductList';
+import { useProductDetail } from '../hooks/useProductDetail';
+import { NotificationModal } from '@shared/components/common/NotificationModal';
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -20,6 +21,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  // 모드 구분을 명확하게 하기 위한 상태
+  const isEditMode = Boolean(product?.id);
+  
   const [formData, setFormData] = useState({
     nm_material: '',
     type: ProductType.FINISHED_PRODUCT,
@@ -34,28 +38,79 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     },
   });
 
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 중복 제출 방지 플래그
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({ isOpen: false, type: 'success', title: '', message: '' });
 
-  const createProductUseCase = DIContainer.getInstance().getCreateProductUseCase();
-  const updateProductUseCase = DIContainer.getInstance().getUpdateProductUseCase();
+  // Mutation Hooks 사용
+  const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
+  
+  // 제품 상세 정보 조회 (product.id가 있을 때만)
+  const { productDetail, loading: detailLoading } = useProductDetail(product?.id);
 
+  // 제품 상세 정보가 로드되면 폼 데이터 업데이트
   useEffect(() => {
-    if (product) {
+    if (productDetail && isEditMode) {
+      console.log('🎯 Setting form data from product detail:', productDetail);
       setFormData({
-        nm_material: product.nm_material,
-        type: product.type as ProductType,
-        category: { code: product.category, name: product.categoryName },
-        unit: { code: product.unit, name: product.unitName },
-        safetyStock: product.safetyStock,
-        isActive: product.isActive,
+        nm_material: productDetail.nm_material,
+        type: productDetail.type as ProductType,
+        category: productDetail.category,
+        unit: productDetail.unit,
+        safetyStock: productDetail.safetyStock,
+        isActive: productDetail.isActive,
         additionalInfo: {
-          description: '',
-          specifications: '',
-          notes: '',
+          description: productDetail.additionalInfo?.description || '',
+          specifications: productDetail.additionalInfo?.specifications || '',
+          notes: productDetail.additionalInfo?.notes || '',
         },
       });
-    } else {
+    }
+  }, [productDetail, isEditMode]);
+
+  // 모달이 열릴 때 초기화
+  useEffect(() => {
+    if (isOpen) {
+      if (!product) {
+        // 신규 등록 시 초기화
+        setFormData({
+          nm_material: '',
+          type: ProductType.FINISHED_PRODUCT,
+          category: { code: 'ELEC', name: '전자제품' },
+          unit: { code: 'EA', name: '개' },
+          safetyStock: 0,
+          isActive: true,
+          additionalInfo: {
+            description: '',
+            specifications: '',
+            notes: '',
+          },
+        });
+      }
+      // 수정 모드인 경우 productDetail이 로드될 때까지 기다림
+      setError(null);
+      setIsSubmitting(false);
+    }
+  }, [product, isOpen]);
+
+  // Mutation 성공 처리 - 신규 등록
+  React.useEffect(() => {
+    if (createProductMutation.isSuccess) {
+      // 성공 알림 표시
+      setNotification({
+        isOpen: true,
+        type: 'success',
+        title: '등록 완료',
+        message: '제품이 성공적으로 등록되었습니다.'
+      });
+      
+      // 폼 데이터 초기화
       setFormData({
         nm_material: '',
         type: ProductType.FINISHED_PRODUCT,
@@ -69,49 +124,88 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           notes: '',
         },
       });
-    }
-    setError(null);
-  }, [product, isOpen]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (product) {
-        const request: UpdateProductRequest = {
-          productId: product.id,
-          nm_material: formData.nm_material,
-          type: formData.type,
-          category: formData.category,
-          unit: formData.unit,
-          safetyStock: formData.safetyStock,
-          isActive: formData.isActive,
-          additionalInfo: formData.additionalInfo,
-          id_updated: 'current-user', // TODO: 실제 사용자 ID
-        };
-        await updateProductUseCase.execute(request);
-      } else {
-        const request: CreateProductRequest = {
-          nm_material: formData.nm_material,
-          type: formData.type,
-          category: formData.category,
-          unit: formData.unit,
-          safetyStock: formData.safetyStock,
-          isActive: formData.isActive,
-          additionalInfo: formData.additionalInfo,
-          id_create: 'current-user', // TODO: 실제 사용자 ID
-        };
-        await createProductUseCase.execute(request);
-      }
       
-      onSuccess();
-      onClose();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setLoading(false);
+      setIsSubmitting(false);
+    }
+  }, [createProductMutation.isSuccess]);
+
+  // Mutation 성공 처리 - 수정
+  React.useEffect(() => {
+    if (updateProductMutation.isSuccess) {
+      // 성공 알림 표시
+      setNotification({
+        isOpen: true,
+        type: 'success',
+        title: '수정 완료',
+        message: '제품이 성공적으로 수정되었습니다.'
+      });
+      
+      setIsSubmitting(false);
+    }
+  }, [updateProductMutation.isSuccess]);
+
+  React.useEffect(() => {
+    if (createProductMutation.isError) {
+      const error = createProductMutation.error;
+      setError(error instanceof Error ? error.message : '제품 등록 중 오류가 발생했습니다.');
+      setIsSubmitting(false); // 에러 발생 시 isSubmitting 해제
+    }
+  }, [createProductMutation.isError, createProductMutation.error]);
+
+  React.useEffect(() => {
+    if (updateProductMutation.isError) {
+      const error = updateProductMutation.error;
+      setError(error instanceof Error ? error.message : '제품 수정 중 오류가 발생했습니다.');
+      setIsSubmitting(false); // 에러 발생 시 isSubmitting 해제
+    }
+  }, [updateProductMutation.isError, updateProductMutation.error]);
+
+  const handleSubmit = () => {
+    setError(null);
+
+    // 이미 처리 중인 경우 중복 제출 방지
+    if (isSubmitting || createProductMutation.isLoading || updateProductMutation.isLoading) {
+      console.log('이미 처리 중입니다.');
+      return;
+    }
+
+    // 필수 필드 검증
+    if (!formData.nm_material) {
+      setError('제품명은 필수 입력 항목입니다.');
+      return;
+    }
+
+    // 제출 상태 설정
+    setIsSubmitting(true);
+
+    // isEditMode로 명확하게 구분
+    if (isEditMode && product?.id) {
+      const request: UpdateProductRequest = {
+        productId: product.id,
+        nm_material: formData.nm_material,
+        type: formData.type,
+        category: formData.category,
+        unit: formData.unit,
+        safetyStock: formData.safetyStock,
+        isActive: formData.isActive,
+        additionalInfo: formData.additionalInfo,
+        id_updated: 'current-user', // TODO: 실제 사용자 ID
+      };
+      
+      updateProductMutation.mutate(request);
+    } else {
+      const request: CreateProductRequest = {
+        nm_material: formData.nm_material,
+        type: formData.type,
+        category: formData.category,
+        unit: formData.unit,
+        safetyStock: formData.safetyStock,
+        isActive: formData.isActive,
+        additionalInfo: formData.additionalInfo,
+        id_create: 'current-user', // TODO: 실제 사용자 ID
+      };
+      
+      createProductMutation.mutate(request);
     }
   };
 
@@ -135,9 +229,21 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen}>
+    <>
+      <Modal isOpen={isOpen}>
       <ModalContent>
-        <h2>{product ? '제품 수정' : '제품 등록'}</h2>
+        <h2>{isEditMode ? '제품 수정' : '제품 등록'}</h2>
+        
+        {/* 로딩 상태 표시 */}
+        {isEditMode && detailLoading && (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '20px',
+            color: '#666'
+          }}>
+            제품 정보를 불러오는 중...
+          </div>
+        )}
         
         {error && (
           <div style={{ color: '#dc3545', marginBottom: '16px', padding: '8px', background: '#f8d7da', borderRadius: '4px' }}>
@@ -145,14 +251,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        {/* 로딩 중이 아닐 때만 폼 표시 */}
+        {!(isEditMode && detailLoading) && (
+        <div>
           <FormGroup>
             <label>제품명 *</label>
             <Input
               type="text"
               value={formData.nm_material}
               onChange={(e) => handleInputChange('nm_material', e.target.value)}
-              required
             />
           </FormGroup>
 
@@ -262,15 +369,31 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </FormGroup>
 
           <Flex gap={8} justify="flex-end">
-            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting || createProductMutation.isLoading || updateProductMutation.isLoading}>
               취소
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? '처리 중...' : (product ? '수정' : '등록')}
+            <Button type="button" onClick={handleSubmit} disabled={isSubmitting || createProductMutation.isLoading || updateProductMutation.isLoading}>
+              {(isSubmitting || createProductMutation.isLoading || updateProductMutation.isLoading) ? '처리 중...' : (isEditMode ? '수정' : '등록')}
             </Button>
           </Flex>
-        </form>
+        </div>
+        )}
       </ModalContent>
-    </Modal>
+      </Modal>
+
+      {/* 알림 모달 */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+          onSuccess();
+          onClose();
+          window.location.reload();
+        }}
+      />
+    </>
   );
 };

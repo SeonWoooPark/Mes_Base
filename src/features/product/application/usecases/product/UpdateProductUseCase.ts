@@ -48,17 +48,17 @@ export class UpdateProductUseCase {
 
     await this.productRepository.save(updatedProduct);
 
-    const history = new ProductHistory(
-      uuidv4(),
-      existingProduct.getId(),
-      HistoryAction.UPDATE,
-      changedFields,
-      request.id_updated,
-      request.id_updated,
-      new Date(),
-      request.reason
-    );
-    await this.productHistoryRepository.save(history);
+    // const history = new ProductHistory(
+    //   uuidv4(),
+    //   existingProduct.getId(),
+    //   HistoryAction.UPDATE,
+    //   changedFields,
+    //   request.id_updated,
+    //   request.id_updated,
+    //   new Date(),
+    //   request.reason
+    // );
+    // await this.productHistoryRepository.save(history);
   }
 
   private async validateBusinessRules(
