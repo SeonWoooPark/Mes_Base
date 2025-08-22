@@ -267,7 +267,7 @@ export class GetBOMTreeUseCase {
         componentName: component.getNmMaterial(),
         componentType: item.getComponentType(),
         componentTypeDisplay: this.bomPresenter.getComponentTypeDisplayName(item.getComponentType()),
-        parentId: item.getParentItemId()?.getValue(),
+        parentId: item.getParentItemId() ? `node-${item.getParentItemId()!.getValue()}` : undefined,
         level: item.getLevel(),
         sequence: item.getSequence(),
         quantity: item.getQuantity(),
@@ -288,7 +288,7 @@ export class GetBOMTreeUseCase {
         depth: item.getLevel()
       };
 
-      nodeMap.set(item.getId().getValue(), node);
+      nodeMap.set(node.id, node);
     }
 
     // 2. 트리 구조 구성
@@ -298,12 +298,13 @@ export class GetBOMTreeUseCase {
     // 부모-자식 관계 설정
     allNodes.forEach(node => {
       if (node.parentId) {
-        const parent = Array.from(nodeMap.values()).find(n => 
-          n.bomItemId === node.parentId
-        );
+        const parent = nodeMap.get(node.parentId);
         if (parent) {
           parent.children.push(node);
           parent.hasChildren = true;
+        } else {
+          // 부모를 찾을 수 없는 경우 루트로 처리
+          rootNodes.push(node);
         }
       } else {
         rootNodes.push(node);

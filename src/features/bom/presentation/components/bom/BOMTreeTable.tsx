@@ -204,33 +204,76 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = memo(({
   }), []);
 
   // === 하위 노드 확인 함수 ===
-  const hasChildren = useCallback((nodeId: string): boolean => {
-    return nodes.some(node => node.parentId === nodeId);
+  const hasChildren = useCallback((node: BOMTreeNode): boolean => {
+    // 먼저 children 배열 확인
+    if (node.children && node.children.length > 0) {
+      return true;
+    }
+    // hasChildren 플래그 확인
+    if (node.hasChildren) {
+      return true;
+    }
+    // 플랫 리스트에서 확인
+    return nodes.some(n => n.parentId === node.id);
   }, [nodes]);
 
   // === 가시적 노드 필터링 ===
   const visibleNodes = useMemo(() => {
+    if (!nodes || nodes.length === 0) return [];
+    
     const result: BOMTreeNode[] = [];
     
-    const addNodeAndChildren = (node: BOMTreeNode) => {
-      result.push(node);
-      
-      // 현재 노드가 펼쳐져 있으면 자식 노드들도 추가
-      if (expandedNodes.has(node.id)) {
-        const children = nodes
-          .filter(child => child.parentId === node.id)
-          .sort((a, b) => a.sequence - b.sequence);
-          
-        children.forEach(child => addNodeAndChildren(child));
+    const addNodeAndChildren = (node: BOMTreeNode, parentExpanded: boolean = true) => {
+      // 부모가 펼쳐져 있을 때만 노드를 추가
+      if (parentExpanded) {
+        result.push(node);
+        
+        // 현재 노드가 펼쳐져 있고 자식이 있으면 자식 노드들도 추가
+        const isExpanded = expandedNodes.has(node.id);
+        if (node.children && node.children.length > 0) {
+          node.children
+            .sort((a, b) => a.sequence - b.sequence)
+            .forEach(child => addNodeAndChildren(child, isExpanded));
+        }
       }
     };
     
-    // 최상위 노드들부터 시작 (parentId가 없는 노드들)
-    const rootNodes = nodes
-      .filter(node => !node.parentId)
-      .sort((a, b) => a.sequence - b.sequence);
+    // 트리 구조가 이미 children을 통해 형성되어 있는지 확인
+    // 루트 노드가 있고, 그 루트 노드가 children을 가지고 있는지 확인
+    const rootNodes = nodes.filter(node => !node.parentId);
+    const hasTreeStructure = rootNodes.length > 0 && 
+      rootNodes.some(root => root.children && root.children.length > 0);
+    
+    if (hasTreeStructure) {
+      // 이미 트리 구조가 있는 경우 루트 노드들부터 시작
+      rootNodes
+        .sort((a, b) => a.sequence - b.sequence)
+        .forEach(rootNode => addNodeAndChildren(rootNode));
+    } else {
+      // 플랫 리스트인 경우 - 서버에서 받은 노드들을 그대로 사용
+      // 모든 노드를 레벨 순으로 정렬하여 표시
+      const sortedNodes = [...nodes].sort((a, b) => {
+        // 레벨이 같으면 sequence로 정렬
+        if (a.level === b.level) {
+          return a.sequence - b.sequence;
+        }
+        // 레벨이 다르면 레벨로 정렬
+        return a.level - b.level;
+      });
       
-    rootNodes.forEach(rootNode => addNodeAndChildren(rootNode));
+      // 각 노드를 확인하여 부모가 펼쳐져 있는지 확인
+      sortedNodes.forEach(node => {
+        // 루트 노드는 항상 표시
+        if (!node.parentId) {
+          result.push(node);
+        } else {
+          // 부모 노드가 펼쳐져 있는지 확인
+          if (expandedNodes.has(node.parentId)) {
+            result.push(node);
+          }
+        }
+      });
+    }
     
     return result;
   }, [nodes, expandedNodes]);
@@ -243,7 +286,7 @@ export const BOMTreeTable: React.FC<BOMTreeTableProps> = memo(({
       enableSorting: false,
       cell: (info) => {
         const node = info.row.original;
-        const nodeHasChildren = hasChildren(node.id);
+        const nodeHasChildren = hasChildren(node);
         const isExpanded = expandedNodes.has(node.id);
         
         return (

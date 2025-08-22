@@ -89,8 +89,24 @@ export const useBOMTree = (productId?: string) => {
   }, [bomTree.expandedNodes, bomActions]);
 
   const expandAll = useCallback(() => {
-    bomActions.expandAllNodes();
-  }, [bomActions]);
+    // 모든 노드 ID 수집
+    const response = bomTreeQuery.data;
+    if (!response?.treeNodes) return;
+    
+    const allNodeIds = new Set<string>();
+    
+    const collectAllNodeIds = (nodes: BOMTreeNode[]) => {
+      for (const node of nodes) {
+        allNodeIds.add(node.id);
+        if (node.children && node.children.length > 0) {
+          collectAllNodeIds(node.children);
+        }
+      }
+    };
+    
+    collectAllNodeIds(response.treeNodes);
+    bomActions.setExpandedNodes(allNodeIds);
+  }, [bomTreeQuery.data, bomActions]);
 
   const collapseAll = useCallback(() => {
     bomActions.collapseAllNodes();
